@@ -1,9 +1,13 @@
-// import xRouter from './routes/x.route.js'
+import userRouter from './route/user.route.js'
+import orderRouter from './route/order.route.js'
+import partnerRouter from './route/partner.route.js'
+
 import express from 'express'
 import bodyParser from 'body-parser'
 import cookieParser from 'cookie-parser'
 import mongoose from 'mongoose'
 import dotenv  from 'dotenv'
+
 const app = express()
 const port = 3000
 
@@ -30,7 +34,11 @@ app.get('/', (req, res) =>  {
     res.send("ok")
 })
 
-// app.use('/x', xRouter)
+app.use('/user', userRouter)
+app.use('/order', orderRouter)
+app.use('/partner', partnerRouter)
+
+
 
 app.listen(port, () => {
     console.log(`server started on port: ${port}`)
