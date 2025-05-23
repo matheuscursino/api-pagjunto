@@ -4,6 +4,6 @@ import { getPartner, updatePartnerBalance } from '../controller/partner.controll
 
 
 partnerRouter.get('/', getPartner)
-partnerRouter.get('/balance', updatePartnerBalance)
+partnerRouter.post('/balance', updatePartnerBalance)
 
 export default partnerRouter;

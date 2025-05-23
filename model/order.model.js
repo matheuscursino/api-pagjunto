@@ -8,7 +8,7 @@ const orderSchema = new Schema({
     totalValue: Number,
     paidValue: Number,
     paymentsNumber: Number,
-    status: ['fresh', 'progress', 'paid']
+    status: String
 })
 
 
