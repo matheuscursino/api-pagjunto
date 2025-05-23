@@ -1,4 +1,6 @@
 import orderModel from '../model/order.model.js'
+import mongoose from 'mongoose'
+
 var reqOrderId
 var orderDoc
 
@@ -22,13 +24,13 @@ export function createOrder(req, res) {
     var reqBodyValues = Object.values(req.body)
     var reqPartnerId = reqBodyValues[0]
     var reqUserId = reqBodyValues[1]
-    reqOrderId = reqBodyValues[2]
-    var reqTotalValue = reqBodyValues[3]
+    var reqTotalValue = reqBodyValues[2]
 
     getOrderDoc().then(() => {
         if(orderDoc == null){
+            var orderId = new mongoose.Types.ObjectId()
             const order = new orderModel({
-                orderId: reqOrderId,
+                orderId: orderId,
                 partnerId: reqPartnerId,
                 userId: reqUserId,
                 totalValue: reqTotalValue,
@@ -37,7 +39,7 @@ export function createOrder(req, res) {
                 status: 'fresh'
             })
             order.save().then(() => {
-                res.status(201).send()
+                res.status(201).send(orderId)
             })
         } else {
             res.status(200).send(orderDoc)

@@ -1,14 +1,15 @@
 import mongoose from 'mongoose'
+
 const { Schema } = mongoose
 
 const orderSchema = new Schema({
-    orderId: String,
+    orderId: mongoose.ObjectId,
     partnerId: String,
     userId: String,
     totalValue: Number,
     paidValue: Number,
     paymentsNumber: Number,
-    status: String
+    status: String,
 })
 
 
