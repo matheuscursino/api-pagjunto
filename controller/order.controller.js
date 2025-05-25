@@ -26,24 +26,18 @@ export function createOrder(req, res) {
     var reqUserId = reqBodyValues[1]
     var reqTotalValue = reqBodyValues[2]
 
-    getOrderDoc().then(() => {
-        if(orderDoc == null){
-            var orderId = new mongoose.Types.ObjectId()
-            const order = new orderModel({
-                orderId: orderId,
-                partnerId: reqPartnerId,
-                userId: reqUserId,
-                totalValue: reqTotalValue,
-                paidValue: 0,
-                paymentsNumber: 0,
-                status: 'fresh'
-            })
-            order.save().then(() => {
-                res.status(201).send(orderId)
-            })
-        } else {
-            res.status(200).send(orderDoc)
-        }
+    var orderId = new mongoose.Types.ObjectId()
+    const order = new orderModel({
+        orderId: orderId,
+        partnerId: reqPartnerId,
+        userId: reqUserId,
+        totalValue: reqTotalValue,
+        paidValue: 0,
+        paymentsNumber: 0,
+        status: 'fresh'
+    })
+    order.save().then(() => {
+        res.status(201).send(orderId)
     })
 }
 
