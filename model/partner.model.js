@@ -2,7 +2,7 @@ import mongoose from 'mongoose'
 const { Schema } = mongoose
 
 const partnerSchema = new Schema({
-    partnerId: String,
+    partnerId: mongoose.ObjectId,
     password: String,
     name: String,
     accountBalance: Number
