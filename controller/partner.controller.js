@@ -25,6 +25,8 @@ export function getPartner(req, res) {
         } else {
             res.status(200).send()
         }
+    }).catch(() => {
+        res.status(500).send()
     })
 }
 
@@ -49,6 +51,8 @@ export function createPartner(req, res){
                 res.status(201).send(partnerId)
             })
         }
+    }).catch(() => {
+        res.status(500).send()
     })
 }
 
@@ -68,5 +72,7 @@ export function updatePartnerBalance(req, res) {
                 res.status(200).send()
             })
         }
+    }).catch(() => {
+        res.status(500).send()
     })
 }
