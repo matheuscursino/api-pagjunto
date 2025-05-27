@@ -7,8 +7,7 @@ var orderDoc;
 
 export function getOrder(req, res) {
     var reqBodyValues = Object.values(req.body)
-    var reqPartnerId = reqBodyValues[0]
-    reqOrderId = reqBodyValues[1]
+    reqOrderId = reqBodyValues[0]
 
     getOrderDoc().then(() => {
         if(orderDoc == null){
@@ -41,11 +40,10 @@ export function createOrder(req, res) {
 
 export function updatePaymentsOrder(req, res) {
     var reqBodyValues = Object.values(req.body)
-    var reqPartnerId = reqBodyValues[0]
-    reqOrderId = reqBodyValues[1]
-    var reqPaidValue = reqBodyValues[2]
-    var reqPaymentsNumber = reqBodyValues[3]
-    var reqPayersIds = reqBodyValues[4]
+    reqOrderId = reqBodyValues[0]
+    var reqPaidValue = reqBodyValues[1]
+    var reqPaymentsNumber = reqBodyValues[2]
+    var reqPayersIds = reqBodyValues[3]
 
     getOrderDoc().then(() => {
         if(orderDoc == null){
@@ -64,9 +62,8 @@ export function updatePaymentsOrder(req, res) {
 
 export function updateStatusOrder(req, res) {
     var reqBodyValues = Object.values(req.body)
-    var reqPartnerId = reqBodyValues[0]
-    reqOrderId = reqBodyValues[1]
-    var reqOrderStatus = reqBodyValues[2]
+    reqOrderId = reqBodyValues[0]
+    var reqOrderStatus = reqBodyValues[1]
 
     getOrderDoc().then(() => {
         if(orderDoc == null){
