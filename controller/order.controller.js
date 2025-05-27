@@ -31,6 +31,7 @@ export function createOrder(req, res) {
         totalValue: reqTotalValue,
         paidValue: 0,
         paymentsNumber: 0,
+        payersIds: [],
         status: 'fresh'
     })
     order.save().then(() => {
@@ -44,6 +45,7 @@ export function updatePaymentsOrder(req, res) {
     reqOrderId = reqBodyValues[1]
     var reqPaidValue = reqBodyValues[2]
     var reqPaymentsNumber = reqBodyValues[3]
+    var reqPayersIds = reqBodyValues[4]
 
     getOrderDoc().then(() => {
         if(orderDoc == null){
@@ -51,7 +53,8 @@ export function updatePaymentsOrder(req, res) {
         } else {
             orderModel.updateOne({orderId: reqOrderId}, {
                 paidValue: reqPaidValue,
-                paymentsNumber: reqPaymentsNumber
+                paymentsNumber: reqPaymentsNumber,
+                $push: { payersIds: reqPayersIds }
             }).then(() => {
                 res.status(200).send()
             })

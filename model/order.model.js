@@ -7,6 +7,7 @@ const orderSchema = new Schema({
     totalValue: Number,
     paidValue: Number,
     paymentsNumber: Number,
+    payersIds: Array,
     status: String,
 })
 
