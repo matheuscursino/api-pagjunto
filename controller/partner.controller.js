@@ -1,6 +1,7 @@
 import partnerModel from '../model/partner.model.js'
 import adminModel from '../model/admin.model.js'
 import mongoose from 'mongoose'
+import crypto from 'crypto'
 
 var partnerDoc;
 var adminDoc;
@@ -36,6 +37,8 @@ export function createPartner(req, res){
     var reqPartnerPassword = reqBodyValues[1]
     reqAdminPassword = reqBodyValues[2]
 
+    var apiUUID = crypto.randomUUID();
+
     getAdminDoc().then(() => {
         if(adminDoc == null){
             res.status(403).send()
@@ -45,7 +48,8 @@ export function createPartner(req, res){
                 partnerId: partnerId,
                 password: reqPartnerPassword,
                 name: reqPartnerName,
-                accountBalance: 0
+                accountBalance: 0,
+                apiKey: apiUUID
             })
             partner.save().then(() => {
                 res.status(201).send(partnerId)
