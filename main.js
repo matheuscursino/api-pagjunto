@@ -1,4 +1,3 @@
-import userRouter from './route/user.route.js'
 import orderRouter from './route/order.route.js'
 import partnerRouter from './route/partner.route.js'
 
@@ -34,7 +33,6 @@ app.get('/', (req, res) =>  {
     res.send("ok")
 })
 
-app.use('/user', userRouter)
 app.use('/order', orderRouter)
 app.use('/partner', partnerRouter)
 

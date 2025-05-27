@@ -8,8 +8,7 @@ var orderDoc;
 export function getOrder(req, res) {
     var reqBodyValues = Object.values(req.body)
     var reqPartnerId = reqBodyValues[0]
-    var reqUserId = reqBodyValues[1]
-    reqOrderId = reqBodyValues[2]
+    reqOrderId = reqBodyValues[1]
 
     getOrderDoc().then(() => {
         if(orderDoc == null){
@@ -23,14 +22,12 @@ export function getOrder(req, res) {
 export function createOrder(req, res) {
     var reqBodyValues = Object.values(req.body)
     var reqPartnerId = reqBodyValues[0]
-    var reqUserId = reqBodyValues[1]
-    var reqTotalValue = reqBodyValues[2]
+    var reqTotalValue = reqBodyValues[1]
 
     var orderId = new mongoose.Types.ObjectId()
     const order = new orderModel({
         orderId: orderId,
         partnerId: reqPartnerId,
-        userId: reqUserId,
         totalValue: reqTotalValue,
         paidValue: 0,
         paymentsNumber: 0,
