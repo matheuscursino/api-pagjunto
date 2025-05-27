@@ -1,9 +1,16 @@
 import orderModel from '../model/order.model.js'
+import partnerModel from '../model/partner.model.js'
 import mongoose from 'mongoose'
 
 var reqOrderId;
+var reqPartnerId
 var orderDoc;
+var partnerDoc;
 
+
+async function getPartnerDoc(){
+    partnerDoc = await partnerModel.findOne({partnerId: reqPartnerId}).lean()
+}
 
 export function getOrder(req, res) {
     var reqBodyValues = Object.values(req.body)
@@ -15,26 +22,36 @@ export function getOrder(req, res) {
         } else {
             res.status(200).send(orderDoc)
         }
+    }).catch(() => {
+        res.status(500).send()
     })
 }
 
 export function createOrder(req, res) {
     var reqBodyValues = Object.values(req.body)
-    var reqPartnerId = reqBodyValues[0]
+    reqPartnerId = reqBodyValues[0]
     var reqTotalValue = reqBodyValues[1]
 
-    var orderId = new mongoose.Types.ObjectId()
-    const order = new orderModel({
-        orderId: orderId,
-        partnerId: reqPartnerId,
-        totalValue: reqTotalValue,
-        paidValue: 0,
-        paymentsNumber: 0,
-        payersIds: [],
-        status: 'fresh'
-    })
-    order.save().then(() => {
-        res.status(201).send(orderId)
+    getPartnerDoc().then(() => {
+        if(partnerDoc == null){
+            console.log(partnerDoc)
+        } else {
+            var orderId = new mongoose.Types.ObjectId()
+            const order = new orderModel({
+                orderId: orderId,
+                partnerId: reqPartnerId,
+                totalValue: reqTotalValue,
+                paidValue: 0,
+                paymentsNumber: 0,
+                payersIds: [],
+                status: 'fresh'
+            })
+            order.save().then(() => {
+                res.status(201).send(orderId)
+            })
+        }
+    }).catch(() => {
+        res.status(500).send()
     })
 }
 
@@ -57,6 +74,8 @@ export function updatePaymentsOrder(req, res) {
                 res.status(200).send()
             })
         }
+    }).catch(() => {
+        res.status(500).send()
     })
 }
 
@@ -75,6 +94,8 @@ export function updateStatusOrder(req, res) {
                 res.status(200).send()
             })
         }
+    }).catch(() => {
+        res.status(500).send()
     })
 }
 
