@@ -2,6 +2,8 @@ import partnerModel from '../model/partner.model.js'
 import adminModel from '../model/admin.model.js'
 import mongoose from 'mongoose'
 import crypto from 'crypto'
+import bcrypt from 'bcrypt'
+
 
 var partnerDoc;
 var adminDoc;
@@ -36,28 +38,33 @@ export function createPartner(req, res){
     var reqPartnerName = reqBodyValues[0]
     var reqPartnerPassword = reqBodyValues[1]
     reqAdminPassword = reqBodyValues[2]
+    var encryptedPassword
 
-    var apiUUID = crypto.randomUUID();
+    bcrypt.hash(reqPartnerPassword, 10, function(err, hash) {
+        encryptedPassword = hash
 
-    getAdminDoc().then(() => {
-        if(adminDoc == null){
-            res.status(403).send()
-        } else {
-            var partnerId = new mongoose.Types.ObjectId()
-            const partner = new partnerModel({
-                partnerId: partnerId,
-                password: reqPartnerPassword,
-                name: reqPartnerName,
-                accountBalance: 0,
-                apiKey: apiUUID
-            })
-            partner.save().then(() => {
-                res.status(201).send(partnerId)
-            })
-        }
-    }).catch(() => {
-        res.status(500).send()
-    })
+        var apiUUID = crypto.randomUUID();
+
+        getAdminDoc().then(() => {
+            if(adminDoc == null){
+                res.status(403).send()
+            } else {
+                var partnerId = new mongoose.Types.ObjectId()
+                const partner = new partnerModel({
+                    partnerId: partnerId,
+                    password: encryptedPassword,
+                    name: reqPartnerName,
+                    accountBalance: 0,
+                    apiKey: apiUUID
+                })
+                partner.save().then(() => {
+                    res.status(201).send(partnerId)
+                })
+            }
+        }).catch(() => {
+            res.status(500).send()
+        })
+    });
 }
 
 export function updatePartnerBalance(req, res) {
