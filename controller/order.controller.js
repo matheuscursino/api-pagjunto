@@ -3,7 +3,7 @@ import partnerModel from '../model/partner.model.js'
 import mongoose from 'mongoose'
 
 var reqOrderId;
-var reqPartnerId
+var reqPartnerId;
 var orderDoc;
 var partnerDoc;
 
@@ -31,24 +31,29 @@ export function createOrder(req, res) {
     var reqBodyValues = Object.values(req.body)
     reqPartnerId = reqBodyValues[0]
     var reqTotalValue = reqBodyValues[1]
-
+    var reqApiKey = reqBodyValues[2]
+    
     getPartnerDoc().then(() => {
         if(partnerDoc == null){
             console.log(partnerDoc)
         } else {
-            var orderId = new mongoose.Types.ObjectId()
-            const order = new orderModel({
-                orderId: orderId,
-                partnerId: reqPartnerId,
-                totalValue: reqTotalValue,
-                paidValue: 0,
-                paymentsNumber: 0,
-                payersIds: [],
-                status: 'fresh'
-            })
-            order.save().then(() => {
-                res.status(201).send(orderId)
-            })
+            if (reqApiKey == partnerDoc.apiKey){
+                var orderId = new mongoose.Types.ObjectId()
+                const order = new orderModel({
+                    orderId: orderId,
+                    partnerId: reqPartnerId,
+                    totalValue: reqTotalValue,
+                    paidValue: 0,
+                    paymentsNumber: 0,
+                    payersIds: [],
+                    status: 'fresh'
+                })
+                order.save().then(() => {
+                    res.status(201).send(orderId)
+                })
+            } else {
+                res.status(403).send()
+            }
         }
     }).catch(() => {
         res.status(500).send()
@@ -58,20 +63,38 @@ export function createOrder(req, res) {
 export function updatePaymentsOrder(req, res) {
     var reqBodyValues = Object.values(req.body)
     reqOrderId = reqBodyValues[0]
-    var reqPaidValue = reqBodyValues[1]
-    var reqPaymentsNumber = reqBodyValues[2]
-    var reqPayersIds = reqBodyValues[3]
+    reqPartnerId = reqBodyValues[1]
+    var reqPaidValue = reqBodyValues[2]
+    var reqPaymentsNumber = reqBodyValues[3]
+    var reqPayersIds = reqBodyValues[4]
+    var reqApiKey = reqBodyValues[5]
 
     getOrderDoc().then(() => {
         if(orderDoc == null){
-            res.status(404).send()
+            res.status(404).send({error: "order doesnt exist"})
         } else {
-            orderModel.updateOne({orderId: reqOrderId}, {
-                paidValue: reqPaidValue,
-                paymentsNumber: reqPaymentsNumber,
-                $push: { payersIds: reqPayersIds }
-            }).then(() => {
-                res.status(200).send()
+            getPartnerDoc().then(() => {
+                if(partnerDoc == null){
+                    res.status(404).send({error: "partner doesnt exist"})
+                } else {
+                    if(reqPartnerId == orderDoc.partnerId){
+                        if(reqApiKey == partnerDoc.apiKey) {
+                            orderModel.updateOne({orderId: reqOrderId}, {
+                                paidValue: reqPaidValue,
+                                paymentsNumber: reqPaymentsNumber,
+                                $push: { payersIds: reqPayersIds }
+                            }).then(() => {
+                                res.status(200).send()
+                            })
+                        } else {
+                            res.status(403).send()
+                        }
+                    } else {
+                        res.status(404).send("order doesnt exist")
+                    }
+                }
+            }).catch(() => {
+                res.status(500).send()
             })
         }
     }).catch(() => {
@@ -82,16 +105,30 @@ export function updatePaymentsOrder(req, res) {
 export function updateStatusOrder(req, res) {
     var reqBodyValues = Object.values(req.body)
     reqOrderId = reqBodyValues[0]
-    var reqOrderStatus = reqBodyValues[1]
+    reqPartnerId = reqBodyValues[1]
+    var reqOrderStatus = reqBodyValues[2]
+    var reqApiKey = reqBodyValues[3]
 
     getOrderDoc().then(() => {
         if(orderDoc == null){
-            res.status(404).send()
+            res.status(404).send({error: "order doesnt exist"})
         } else {
-            orderModel.updateOne({orderId: reqOrderId}, {
-                status: reqOrderStatus,
-            }).then(() => {
-                res.status(200).send()
+            getPartnerDoc().then(() => {
+                if(partnerDoc == null){
+                    res.status(404).send({error: "partner doesnt exist"})
+                } else {
+                    if(partnerDoc.apiKey == reqApiKey){
+                        orderModel.updateOne({orderId: reqOrderId}, {
+                            status: reqOrderStatus,
+                        }).then(() => {
+                            res.status(200).send()
+                        })
+                    } else {
+                        res.status(403).send()
+                    }
+                }
+            }).catch(() => {
+                res.status(500).send()
             })
         }
     }).catch(() => {
