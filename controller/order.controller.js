@@ -35,7 +35,7 @@ export function createOrder(req, res) {
     
     getPartnerDoc().then(() => {
         if(partnerDoc == null){
-            console.log(partnerDoc)
+            res.status(404).send({error: "partner doesnt exist"})
         } else {
             if (reqApiKey == partnerDoc.apiKey){
                 var orderId = new mongoose.Types.ObjectId()
