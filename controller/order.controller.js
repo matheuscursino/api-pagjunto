@@ -117,14 +117,18 @@ export function updateStatusOrder(req, res) {
                 if(partnerDoc == null){
                     res.status(404).send({error: "partner doesnt exist"})
                 } else {
-                    if(partnerDoc.apiKey == reqApiKey){
-                        orderModel.updateOne({orderId: reqOrderId}, {
-                            status: reqOrderStatus,
-                        }).then(() => {
-                            res.status(200).send()
-                        })
+                    if(reqPartnerId == order.partnerId){
+                        if(partnerDoc.apiKey == reqApiKey){
+                            orderModel.updateOne({orderId: reqOrderId}, {
+                                status: reqOrderStatus,
+                            }).then(() => {
+                                res.status(200).send()
+                            })
+                        } else {
+                            res.status(403).send()
+                        }
                     } else {
-                        res.status(403).send()
+                        res.status(404).send({error: "order doesnt exist"})
                     }
                 }
             }).catch(() => {
