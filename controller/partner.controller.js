@@ -22,7 +22,7 @@ export function getPartner(req, res) {
 
     getPartnerDoc().then(() => {
         if(partnerDoc == null){
-            res.status(404).send()
+            res.status(404).send({error: "partner doesnt exist"})
         } else {
             res.status(200).send()
         }
