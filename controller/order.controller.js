@@ -18,7 +18,7 @@ export function getOrder(req, res) {
 
     getOrderDoc().then(() => {
         if(orderDoc == null){
-            res.status(404).send()
+            res.status(404).send({error: "order doesnt exist"})
         } else {
             res.status(200).send(orderDoc)
         }
