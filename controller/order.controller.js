@@ -117,7 +117,7 @@ export function updateStatusOrder(req, res) {
                 if(partnerDoc == null){
                     res.status(404).send({error: "partner doesnt exist"})
                 } else {
-                    if(reqPartnerId == order.partnerId){
+                    if(reqPartnerId == orderDoc.partnerId){
                         if(partnerDoc.apiKey == reqApiKey){
                             orderModel.updateOne({orderId: reqOrderId}, {
                                 status: reqOrderStatus,
