@@ -26,7 +26,10 @@ export function getPartner(req, res) {
         if(partnerDoc == null){
             res.status(404).send({error: "partner doesnt exist"})
         } else {
-            res.status(200).send()
+            res.status(200).send({
+                partnerName: partnerDoc.name,
+                recipient_id: partnerDoc.recipient_id
+            })
         }
     }).catch(() => {
         res.status(500).send()

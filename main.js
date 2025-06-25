@@ -7,6 +7,8 @@ import bodyParser from 'body-parser'
 import cookieParser from 'cookie-parser'
 import mongoose from 'mongoose'
 import dotenv  from 'dotenv'
+import cors from 'cors';
+
 
 const app = express()
 const port = 3000
@@ -24,6 +26,7 @@ main().then(()=>{
 })
 
 app.use(bodyParser.json())
+app.use(cors());
 app.use(bodyParser.urlencoded({
     extended: true
   }))
