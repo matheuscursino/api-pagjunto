@@ -38,6 +38,7 @@ export function createPartner(req, res){
     var reqPartnerName = reqBodyValues[0]
     var reqPartnerPassword = reqBodyValues[1]
     reqAdminPassword = reqBodyValues[2]
+    var reqRecipient_id = reqBodyValues[3]
     var encryptedPassword
 
     bcrypt.hash(reqPartnerPassword, 10, function(err, hash) {
@@ -55,7 +56,8 @@ export function createPartner(req, res){
                     password: encryptedPassword,
                     name: reqPartnerName,
                     accountBalance: 0,
-                    apiKey: apiUUID
+                    apiKey: apiUUID,
+                    recipient_id: reqRecipient_id
                 })
                 partner.save().then(() => {
                     res.status(201).send(partnerId)

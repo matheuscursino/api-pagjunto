@@ -6,7 +6,8 @@ const partnerSchema = new Schema({
     password: String,
     name: String,
     accountBalance: Number,
-    apiKey: String
+    apiKey: String,
+    recipient_id: String
 })
 
 
