@@ -1,5 +1,6 @@
 import orderRouter from './route/order.route.js'
 import partnerRouter from './route/partner.route.js'
+import paymentRouter from './route/payment.route.js'
 
 import express from 'express'
 import bodyParser from 'body-parser'
@@ -35,6 +36,7 @@ app.get('/', (req, res) =>  {
 
 app.use('/order', orderRouter)
 app.use('/partner', partnerRouter)
+app.use('/payment', paymentRouter)
 
 app.listen(port, () => {
     console.log(`server started on port: ${port}`)
