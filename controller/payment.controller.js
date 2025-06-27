@@ -69,3 +69,26 @@ export async function createPix(req, res) {
     return res.status(500).json({ error: 'Erro ao criar pagamento Pix.' });
   }
 }
+
+export async function getChargeStatus(req, res) {
+  const { charge_id } = req.params;
+  console.log("polling")
+
+  try {
+    const response = await axios.get(
+      `https://api.pagar.me/core/v5/charges/${charge_id}`,
+      {
+        headers: {
+          Authorization: 'Basic ' + Buffer.from(process.env.PAGARME_KEY).toString('base64')
+        }
+      }
+    );
+
+    const status = response.data.status;
+
+    res.status(200).json({ status });
+  } catch (error) {
+    console.error('Erro ao consultar status:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Erro ao consultar status do pagamento' });
+  }
+}
