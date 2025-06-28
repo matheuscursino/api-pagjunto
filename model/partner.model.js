@@ -3,6 +3,7 @@ const { Schema } = mongoose
 
 const partnerSchema = new Schema({
     partnerId: mongoose.ObjectId,
+    email: String,
     password: String,
     name: String,
     accountBalance: Number,

@@ -39,9 +39,10 @@ export function getPartner(req, res) {
 export function createPartner(req, res){
     var reqBodyValues = Object.values(req.body);
     var reqPartnerName = reqBodyValues[0]
-    var reqPartnerPassword = reqBodyValues[1]
-    reqAdminPassword = reqBodyValues[2]
-    var reqRecipient_id = reqBodyValues[3]
+    var reqEmail = reqBodyValues[1]
+    var reqPartnerPassword = reqBodyValues[2]
+    reqAdminPassword = reqBodyValues[3]
+    var reqRecipient_id = reqBodyValues[4]
     var encryptedPassword
 
     bcrypt.hash(reqPartnerPassword, 10, function(err, hash) {
@@ -56,6 +57,7 @@ export function createPartner(req, res){
                 var partnerId = new mongoose.Types.ObjectId()
                 const partner = new partnerModel({
                     partnerId: partnerId,
+                    email: reqEmail,
                     password: encryptedPassword,
                     name: reqPartnerName,
                     accountBalance: 0,
