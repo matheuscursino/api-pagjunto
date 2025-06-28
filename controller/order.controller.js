@@ -1,16 +1,29 @@
 import orderModel from '../model/order.model.js'
 import partnerModel from '../model/partner.model.js'
+import adminModel from '../model/admin.model.js'
+
 import mongoose from 'mongoose'
 
 var reqOrderId;
 var reqPartnerId;
 var orderDoc;
 var partnerDoc;
+var adminDoc;
+var reqAdminPassword;
 
 
 async function getPartnerDoc(){
     partnerDoc = await partnerModel.findOne({partnerId: reqPartnerId}).lean()
 }
+
+async function getOrderDoc(){
+    orderDoc = await orderModel.findOne({orderId: reqOrderId}).lean()
+}
+
+async function getAdminDoc(){
+    adminDoc = await adminModel.findOne({adminPassword: reqAdminPassword}).lean()
+}
+
 
 export function getOrder(req, res) {
     var reqBodyValues = Object.values(req.body)
@@ -63,37 +76,28 @@ export function createOrder(req, res) {
 export function updatePaymentsOrder(req, res) {
     var reqBodyValues = Object.values(req.body)
     reqOrderId = reqBodyValues[0]
-    reqPartnerId = reqBodyValues[1]
-    var reqPaidValue = reqBodyValues[2]
-    var reqPaymentsNumber = reqBodyValues[3]
-    var reqPayersIds = reqBodyValues[4]
-    var reqApiKey = reqBodyValues[5]
+    var reqPaidValue = reqBodyValues[1]
+    var reqPaymentsNumber = reqBodyValues[2]
+    var reqPayersIds = reqBodyValues[3]
+    reqAdminPassword = reqBodyValues[4]
 
     getOrderDoc().then(() => {
         if(orderDoc == null){
             res.status(404).send({error: "order doesnt exist"})
         } else {
-            getPartnerDoc().then(() => {
-                if(partnerDoc == null){
-                    res.status(404).send({error: "partner doesnt exist"})
-                } else {
-                    if(reqPartnerId == orderDoc.partnerId){
-                        if(reqApiKey == partnerDoc.apiKey) {
-                            orderModel.updateOne({orderId: reqOrderId}, {
-                                paidValue: reqPaidValue,
-                                paymentsNumber: reqPaymentsNumber,
-                                $push: { payersIds: reqPayersIds }
-                            }).then(() => {
-                                res.status(200).send()
-                            })
-                        } else {
-                            res.status(403).send()
-                        }
-                    } else {
-                        res.status(404).send("order doesnt exist")
-                    }
+            getAdminDoc().then(() => {
+                if(adminDoc == null){
+                    res.status(403).send()
+                } else{
+                    orderModel.updateOne({orderId: reqOrderId}, {
+                        $inc: { paidValue: reqPaidValue, paymentsNumber: reqPaymentsNumber },
+                        $push: { payersIds: reqPayersIds }
+                    }).then(() => {
+                        res.status(200).send()
+                    })
                 }
-            }).catch(() => {
+            })
+            .catch((e) => {
                 res.status(500).send()
             })
         }
@@ -105,41 +109,29 @@ export function updatePaymentsOrder(req, res) {
 export function updateStatusOrder(req, res) {
     var reqBodyValues = Object.values(req.body)
     reqOrderId = reqBodyValues[0]
-    reqPartnerId = reqBodyValues[1]
-    var reqOrderStatus = reqBodyValues[2]
-    var reqApiKey = reqBodyValues[3]
+    var reqOrderStatus = reqBodyValues[1]
+    reqAdminPassword = reqBodyValues[2]
 
     getOrderDoc().then(() => {
         if(orderDoc == null){
             res.status(404).send({error: "order doesnt exist"})
         } else {
-            getPartnerDoc().then(() => {
-                if(partnerDoc == null){
-                    res.status(404).send({error: "partner doesnt exist"})
-                } else {
-                    if(reqPartnerId == orderDoc.partnerId){
-                        if(partnerDoc.apiKey == reqApiKey){
-                            orderModel.updateOne({orderId: reqOrderId}, {
-                                status: reqOrderStatus,
-                            }).then(() => {
-                                res.status(200).send()
-                            })
-                        } else {
-                            res.status(403).send()
-                        }
-                    } else {
-                        res.status(404).send({error: "order doesnt exist"})
-                    }
+            getAdminDoc().then(() => {
+                if(adminDoc == null){
+                    res.status(403).send()
+                } else{
+                    orderModel.updateOne({orderId: reqOrderId}, {
+                        status: reqOrderStatus,
+                    }).then(() => {
+                        res.status(200).send()
+                    })
                 }
-            }).catch(() => {
+            })
+            .catch((e) => {
                 res.status(500).send()
             })
         }
     }).catch(() => {
         res.status(500).send()
     })
-}
-
-async function getOrderDoc(){
-    orderDoc = await orderModel.findOne({orderId: reqOrderId}).lean()
 }

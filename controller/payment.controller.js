@@ -71,7 +71,7 @@ export async function createPix(req, res) {
 }
 
 export async function getChargeStatus(req, res) {
-  const { charge_id } = req.params;
+  const { charge_id, orderId, payerId, paidValue } = req.params;
   console.log("polling")
 
   try {
@@ -85,6 +85,16 @@ export async function getChargeStatus(req, res) {
     );
 
     const status = response.data.status;
+
+    if(status === 'paid'){
+      axios.put('http://localhost:3000/order/payments', {
+        orderId: orderId,
+        paidValue: paidValue,
+        paymentsNumber: 1,
+        payersIds: payerId,
+        adminPassword: "matheus"
+      })
+    }
 
     res.status(200).json({ status });
   } catch (error) {
