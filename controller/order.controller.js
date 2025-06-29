@@ -88,13 +88,41 @@ export function updatePaymentsOrder(req, res) {
             getAdminDoc().then(() => {
                 if(adminDoc == null){
                     res.status(403).send()
-                } else{
-                    orderModel.updateOne({orderId: reqOrderId}, {
-                        $inc: { paidValue: reqPaidValue, paymentsNumber: reqPaymentsNumber },
-                        $push: { payersIds: reqPayersIds }
-                    }).then(() => {
-                        res.status(200).send()
-                    })
+                } else {
+                    if(orderDoc.status === "fresh" & orderDoc.totalValue != (orderDoc.paidValue + reqPaidValue)){
+                        orderModel.updateOne({orderId: reqOrderId}, {
+                            $inc: { paidValue: reqPaidValue, paymentsNumber: reqPaymentsNumber },
+                            $push: { payersIds: reqPayersIds },
+                            status: "progress"
+                        })
+                        .then(() => {
+                            res.status(200).send()
+                        })
+                    } else if(orderDoc.status === "fresh" & orderDoc.totalValue == (orderDoc.paidValue + reqPaidValue)){
+                        orderModel.updateOne({orderId: reqOrderId}, {
+                            $inc: { paidValue: reqPaidValue, paymentsNumber: reqPaymentsNumber },
+                            $push: { payersIds: reqPayersIds },
+                            status: "paid"
+                        }).then(() => {
+                            res.status(200).send()
+                        })
+                    } else if(orderDoc.status === "progress" & orderDoc.totalValue == (orderDoc.paidValue + reqPaidValue)){
+                        orderModel.updateOne({orderId: reqOrderId}, {
+                            $inc: { paidValue: reqPaidValue, paymentsNumber: reqPaymentsNumber },
+                            $push: { payersIds: reqPayersIds },
+                            status: "paid"
+                        }).then(() => {
+                            res.status(200).send()
+                        })
+                    } else {
+                        orderModel.updateOne({orderId: reqOrderId}, {
+                            $inc: { paidValue: reqPaidValue, paymentsNumber: reqPaymentsNumber },
+                            $push: { payersIds: reqPayersIds }
+                        })
+                        .then(() => {
+                            res.status(200).send()
+                        })
+                    }
                 }
             })
             .catch((e) => {
