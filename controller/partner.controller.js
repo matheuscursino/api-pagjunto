@@ -33,7 +33,9 @@ export function getPartner(req, res) {
         } else {
             res.status(200).send({
                 partnerName: partnerDoc.name,
-                recipient_id: partnerDoc.recipient_id
+                recipient_id: partnerDoc.recipient_id,
+                partnerId: partnerDoc.partnerId,
+                apiKey: partnerDoc.apiKey
             })
         }
     }).catch(() => {
