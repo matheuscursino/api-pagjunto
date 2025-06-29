@@ -5,7 +5,6 @@ const partnerSchema = new Schema({
     partnerId: mongoose.ObjectId,
     password: String,
     name: String,
-    accountBalance: Number,
     apiKey: String,
     recipient_id: String,
     email: String,

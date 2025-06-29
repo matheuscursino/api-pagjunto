@@ -65,7 +65,6 @@ export function createPartner(req, res){
                     email: reqEmail,
                     password: encryptedPassword,
                     name: reqPartnerName,
-                    accountBalance: 0,
                     apiKey: apiUUID,
                     recipient_id: reqRecipient_id
                 })
