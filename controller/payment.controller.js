@@ -72,7 +72,6 @@ export async function createPix(req, res) {
 
 export async function getChargeStatus(req, res) {
   const { charge_id, orderId, payerId, paidValue } = req.params;
-  console.log("polling")
 
   try {
     const response = await axios.get(
@@ -92,7 +91,7 @@ export async function getChargeStatus(req, res) {
         paidValue: paidValue,
         paymentsNumber: 1,
         payersIds: payerId,
-        adminPassword: "matheus"
+        adminPassword: process.env.ADMIN_PASSWORD
       })
     }
 

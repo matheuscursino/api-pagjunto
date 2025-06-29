@@ -89,7 +89,7 @@ export function updatePaymentsOrder(req, res) {
                 if(adminDoc == null){
                     res.status(403).send()
                 } else {
-                    if(orderDoc.status === "fresh" & orderDoc.totalValue != (orderDoc.paidValue + reqPaidValue)){
+                    if(orderDoc.status === "fresh" && Number(orderDoc.totalValue) != (Number(orderDoc.paidValue) + Number(reqPaidValue))){
                         orderModel.updateOne({orderId: reqOrderId}, {
                             $inc: { paidValue: reqPaidValue, paymentsNumber: reqPaymentsNumber },
                             $push: { payersIds: reqPayersIds },
@@ -98,7 +98,7 @@ export function updatePaymentsOrder(req, res) {
                         .then(() => {
                             res.status(200).send()
                         })
-                    } else if(orderDoc.status === "fresh" & orderDoc.totalValue == (orderDoc.paidValue + reqPaidValue)){
+                    } else if(orderDoc.status === "fresh" && Number(orderDoc.totalValue) === Number(orderDoc.paidValue) + Number(reqPaidValue)){
                         orderModel.updateOne({orderId: reqOrderId}, {
                             $inc: { paidValue: reqPaidValue, paymentsNumber: reqPaymentsNumber },
                             $push: { payersIds: reqPayersIds },
@@ -106,7 +106,7 @@ export function updatePaymentsOrder(req, res) {
                         }).then(() => {
                             res.status(200).send()
                         })
-                    } else if(orderDoc.status === "progress" & orderDoc.totalValue == (orderDoc.paidValue + reqPaidValue)){
+                    } else if(orderDoc.status === "progress" && Number(orderDoc.totalValue) === Number(orderDoc.paidValue) + Number(reqPaidValue)){
                         orderModel.updateOne({orderId: reqOrderId}, {
                             $inc: { paidValue: reqPaidValue, paymentsNumber: reqPaymentsNumber },
                             $push: { payersIds: reqPayersIds },
