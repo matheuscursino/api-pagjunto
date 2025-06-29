@@ -80,11 +80,8 @@ export function createPartner(req, res){
     });
 }
 
-
-// Rota na API real que consulta pelo e-mail
 export function getPartnerByEmail(req, res) {
     const { email } = req.body;
-    console.log(req.body)
 
     getPartnerDocEmail(email).then(() => {
         if(partnerDoc2 == null){

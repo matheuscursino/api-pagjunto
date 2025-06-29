@@ -10,6 +10,7 @@ var orderDoc;
 var partnerDoc;
 var adminDoc;
 var reqAdminPassword;
+var ordersArray;
 
 
 async function getPartnerDoc(){
@@ -22,6 +23,13 @@ async function getOrderDoc(){
 
 async function getAdminDoc(){
     adminDoc = await adminModel.findOne({adminPassword: reqAdminPassword}).lean()
+}
+
+async function getOrdersDocByPartner(){
+    ordersArray = await orderModel.find({ partnerId: reqPartnerId })
+                                      .sort({ createdAt: -1 }) 
+                                      .limit(20)
+                                      .lean(); 
 }
 
 
@@ -131,5 +139,14 @@ export function updatePaymentsOrder(req, res) {
         }
     }).catch(() => {
         res.status(500).send()
+    })
+}
+
+export function getOrdersByPartner(req, res){
+    var reqBodyValues = Object.values(req.body)
+    reqPartnerId = reqBodyValues[0]
+
+    getOrdersDocByPartner().then(() => {
+        res.status(200).send(ordersArray)
     })
 }
