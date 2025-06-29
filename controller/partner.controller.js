@@ -78,26 +78,6 @@ export function createPartner(req, res){
     });
 }
 
-export function updatePartnerBalance(req, res) {
-    var reqBodyValues = Object.values(req.body);
-    reqPartnerId = reqBodyValues[0]
-    var reqAccountBalance = reqBodyValues[1]
-
-
-    getPartnerDoc().then(() => {
-        if(partnerDoc == null){
-            res.status(404).send()
-        } else {
-            partnerModel.updateOne({partnerId: reqPartnerId}, {
-                accountBalance: reqAccountBalance,
-            }).then(() => {
-                res.status(200).send()
-            })
-        }
-    }).catch(() => {
-        res.status(500).send()
-    })
-}
 
 // Rota na API real que consulta pelo e-mail
 export function getPartnerByEmail(req, res) {
