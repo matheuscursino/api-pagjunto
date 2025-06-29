@@ -3,12 +3,12 @@ const { Schema } = mongoose
 
 const partnerSchema = new Schema({
     partnerId: mongoose.ObjectId,
-    email: String,
     password: String,
     name: String,
     accountBalance: Number,
     apiKey: String,
-    recipient_id: String
+    recipient_id: String,
+    email: String,
 })
 
 

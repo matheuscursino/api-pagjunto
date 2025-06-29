@@ -6,6 +6,7 @@ import bcrypt from 'bcrypt'
 
 
 var partnerDoc;
+var partnerDoc2;
 var adminDoc;
 var reqPartnerId;
 var reqAdminPassword;
@@ -16,6 +17,10 @@ async function getPartnerDoc(){
 
 async function getAdminDoc(){
     adminDoc = await adminModel.findOne({adminPassword: reqAdminPassword}).lean()
+}
+
+async function getPartnerDocEmail(email){
+    partnerDoc2 = await partnerModel.findOne({ email: email }).lean()
 }
 
 export function getPartner(req, res) {
@@ -94,3 +99,20 @@ export function updatePartnerBalance(req, res) {
         res.status(500).send()
     })
 }
+
+// Rota na API real que consulta pelo e-mail
+export function getPartnerByEmail(req, res) {
+    const { email } = req.body;
+    console.log(req.body)
+
+    getPartnerDocEmail(email).then(() => {
+        if(partnerDoc2 == null){
+            res.status(404).send()
+        } else{
+            res.status(200).send({
+                partnerId: partnerDoc2.partnerId,
+                password: partnerDoc2.password
+            })
+        }
+    })
+    } 

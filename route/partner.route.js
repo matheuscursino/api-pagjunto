@@ -1,9 +1,10 @@
 import express from 'express'
 var partnerRouter = express.Router()
-import { getPartner, createPartner, updatePartnerBalance } from '../controller/partner.controller.js'
+import { getPartner, createPartner, updatePartnerBalance, getPartnerByEmail } from '../controller/partner.controller.js'
 
 
 partnerRouter.get('/', getPartner)
+partnerRouter.get('/by-email', getPartnerByEmail)
 partnerRouter.post('/', createPartner)
 partnerRouter.put('/balance', updatePartnerBalance)
 
