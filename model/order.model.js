@@ -10,7 +10,7 @@ const orderSchema = new Schema({
     payersIds: Array,
     status: String,
 })
-
+orderSchema.set('timestamps', true);
 
 const orderModel = mongoose.model('order', orderSchema)
 
