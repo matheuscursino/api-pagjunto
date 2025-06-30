@@ -86,7 +86,7 @@ export async function getChargeStatus(req, res) {
     const status = response.data.status;
 
     if(status === 'paid'){
-      axios.put('http://localhost:3000/order/payments', {
+      axios.put('https://api.pagjunto.com/order/payments', {
         orderId: orderId,
         paidValue: paidValue,
         paymentsNumber: 1,
