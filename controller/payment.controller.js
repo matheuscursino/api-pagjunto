@@ -39,12 +39,13 @@ export async function createPix(req, res) {
               {
                 amount: Math.round(Number(amount) * 100 * 0.99),
                 recipient_id: recipient_id,
-                type: "flat"
+                type: "flat",
               },
               {
                 amount: Math.round(Number(amount) * 100 * 0.01),
                 recipient_id: process.env.RECEBEDOR_PLATAFORMA_ID,
-                type: "flat"
+                type: "flat",
+                charge_remainder_fee: true
               }
             ]
           }
