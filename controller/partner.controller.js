@@ -3,6 +3,7 @@ import adminModel from '../model/admin.model.js'
 import mongoose from 'mongoose'
 import crypto from 'crypto'
 import bcrypt from 'bcrypt'
+import axios from 'axios'
 
 
 var partnerDoc;
@@ -94,3 +95,25 @@ export function getPartnerByEmail(req, res) {
         }
     })
     } 
+
+export async function getPartnerBalance(req, res){
+    const {recipient_id} = req.body
+
+  try {
+    const response = await axios.get(
+      `https://api.pagar.me/core/v5/recipients/${recipient_id}/balance`,
+      {
+        headers: {
+          Authorization: 'Basic ' + Buffer.from(process.env.PAGARME_KEY).toString('base64')
+        }
+      }
+    );
+
+    const data = response.data;
+
+    res.status(200).json({ data });
+  } catch (error) {
+    console.error('Erro ao consultar status:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Erro ao consultar balance do recipient' });
+  }
+}
