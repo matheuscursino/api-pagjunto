@@ -46,7 +46,9 @@ export async function createPix(req, res) {
                 recipient_id: process.env.RECEBEDOR_PLATAFORMA_ID,
                 type: "flat",
                 options: {
-                  charge_remainder_fee: true
+                  charge_remainder_fee: true,
+                  charge_processing_fee: true,
+                  liable: true
                 }
               }
             ]
