@@ -1,151 +1,130 @@
 import orderModel from '../model/order.model.js'
 import partnerModel from '../model/partner.model.js'
 import adminModel from '../model/admin.model.js'
-
 import mongoose from 'mongoose'
 
-var reqOrderId;
-var reqPartnerId;
-var orderDoc;
-var partnerDoc;
-var adminDoc;
-var reqAdminPassword;
-var ordersArray;
-
-
-async function getPartnerDoc(){
-    partnerDoc = await partnerModel.findOne({partnerId: reqPartnerId}).lean()
+// Funções auxiliares para buscar documentos
+const getPartnerDoc = async (partnerId) => {
+    return await partnerModel.findOne({ partnerId }).lean()
 }
 
-async function getOrderDoc(){
-    orderDoc = await orderModel.findOne({orderId: reqOrderId}).lean()
+const getOrderDoc = async (orderId) => {
+    return await orderModel.findOne({ orderId }).lean()
 }
 
-async function getAdminDoc(){
-    adminDoc = await adminModel.findOne({adminPassword: reqAdminPassword}).lean()
+const getAdminDoc = async (adminPassword) => {
+    return await adminModel.findOne({ adminPassword }).lean()
 }
 
-async function getOrdersDocByPartner(){
-    ordersArray = await orderModel.find({ partnerId: reqPartnerId })
-                                      .sort({ createdAt: -1 }) 
-                                      .lean(); 
+const getOrdersDocByPartner = async (partnerId) => {
+    return await orderModel.find({ partnerId })
+                          .sort({ createdAt: -1 })
+                          .lean()
 }
 
-
-export function getOrder(req, res) {
-    var reqBodyValues = Object.values(req.body)
-    reqOrderId = reqBodyValues[0]
-
-    getOrderDoc().then(() => {
-        if(orderDoc == null){
-            res.status(404).send({error: "order doesnt exist"})
-        } else {
-            res.status(200).send(orderDoc)
+export async function getOrder(req, res) {
+    try {
+        const [orderId] = Object.values(req.body)
+        
+        const orderDoc = await getOrderDoc(orderId)
+        
+        if (!orderDoc) {
+            return res.status(404).send({ error: "order doesnt exist" })
         }
-    }).catch(() => {
+        
+        res.status(200).send(orderDoc)
+    } catch (error) {
         res.status(500).send()
-    })
+    }
 }
 
-export function createOrder(req, res) {
-    var reqBodyValues = Object.values(req.body)
-    reqPartnerId = reqBodyValues[0]
-    var reqTotalValue = reqBodyValues[1]
-    var reqApiKey = reqBodyValues[2]
-    
-    getPartnerDoc().then(() => {
-        if(partnerDoc == null){
-            res.status(404).send({error: "partner doesnt exist"})
-        } else {
-            if (reqApiKey == partnerDoc.apiKey){
-                var orderId = new mongoose.Types.ObjectId()
-                const order = new orderModel({
-                    orderId: orderId,
-                    partnerId: reqPartnerId,
-                    totalValue: reqTotalValue,
-                    paidValue: 0,
-                    paymentsNumber: 0,
-                    payersIds: [],
-                    status: 'fresh'
-                })
-                order.save().then(() => {
-                    res.status(201).send(orderId)
-                })
-            } else {
-                res.status(403).send()
+export async function createOrder(req, res) {
+    try {
+        const [partnerId, totalValue, apiKey] = Object.values(req.body)
+        
+        const partnerDoc = await getPartnerDoc(partnerId)
+        
+        if (!partnerDoc) {
+            return res.status(404).send({ error: "partner doesnt exist" })
+        }
+        
+        if (apiKey !== partnerDoc.apiKey) {
+            return res.status(403).send()
+        }
+        
+        const orderId = new mongoose.Types.ObjectId()
+        const order = new orderModel({
+            orderId,
+            partnerId,
+            totalValue,
+            paidValue: 0,
+            paymentsNumber: 0,
+            payersIds: [],
+            status: 'fresh'
+        })
+        
+        await order.save()
+        res.status(201).send(orderId)
+        
+    } catch (error) {
+        res.status(500).send()
+    }
+}
+
+export async function updatePaymentsOrder(req, res) {
+    try {
+        const [orderId, paidValue, paymentsNumber, payersIds, adminPassword] = Object.values(req.body)
+        
+        const orderDoc = await getOrderDoc(orderId)
+        if (!orderDoc) {
+            return res.status(404).send({ error: "order doesnt exist" })
+        }
+        
+        const adminDoc = await getAdminDoc(adminPassword)
+        if (!adminDoc) {
+            return res.status(403).send()
+        }
+        
+        // Cálculo do valor total após o pagamento
+        const newTotalPaid = Number(orderDoc.paidValue) + Number(paidValue)
+        const totalValue = Number(orderDoc.totalValue)
+        
+        // Determinar o novo status
+        let newStatus = orderDoc.status
+        if (orderDoc.status === "fresh") {
+            newStatus = newTotalPaid === totalValue ? "paid" : "progress"
+        } else if (orderDoc.status === "progress" && newTotalPaid === totalValue) {
+            newStatus = "paid"
+        }
+        
+        // Atualizar o pedido
+        await orderModel.updateOne(
+            { orderId },
+            {
+                $inc: { 
+                    paidValue: paidValue, 
+                    paymentsNumber: paymentsNumber 
+                },
+                $push: { payersIds },
+                status: newStatus
             }
-        }
-    }).catch(() => {
+        )
+        
+        res.status(200).send()
+        
+    } catch (error) {
         res.status(500).send()
-    })
+    }
 }
 
-export function updatePaymentsOrder(req, res) {
-    var reqBodyValues = Object.values(req.body)
-    reqOrderId = reqBodyValues[0]
-    var reqPaidValue = reqBodyValues[1]
-    var reqPaymentsNumber = reqBodyValues[2]
-    var reqPayersIds = reqBodyValues[3]
-    reqAdminPassword = reqBodyValues[4]
-
-    getOrderDoc().then(() => {
-        if(orderDoc == null){
-            res.status(404).send({error: "order doesnt exist"})
-        } else {
-            getAdminDoc().then(() => {
-                if(adminDoc == null){
-                    res.status(403).send()
-                } else {
-                    if(orderDoc.status === "fresh" && Number(orderDoc.totalValue) != (Number(orderDoc.paidValue) + Number(reqPaidValue))){
-                        orderModel.updateOne({orderId: reqOrderId}, {
-                            $inc: { paidValue: reqPaidValue, paymentsNumber: reqPaymentsNumber },
-                            $push: { payersIds: reqPayersIds },
-                            status: "progress"
-                        })
-                        .then(() => {
-                            res.status(200).send()
-                        })
-                    } else if(orderDoc.status === "fresh" && Number(orderDoc.totalValue) === Number(orderDoc.paidValue) + Number(reqPaidValue)){
-                        orderModel.updateOne({orderId: reqOrderId}, {
-                            $inc: { paidValue: reqPaidValue, paymentsNumber: reqPaymentsNumber },
-                            $push: { payersIds: reqPayersIds },
-                            status: "paid"
-                        }).then(() => {
-                            res.status(200).send()
-                        })
-                    } else if(orderDoc.status === "progress" && Number(orderDoc.totalValue) === Number(orderDoc.paidValue) + Number(reqPaidValue)){
-                        orderModel.updateOne({orderId: reqOrderId}, {
-                            $inc: { paidValue: reqPaidValue, paymentsNumber: reqPaymentsNumber },
-                            $push: { payersIds: reqPayersIds },
-                            status: "paid"
-                        }).then(() => {
-                            res.status(200).send()
-                        })
-                    } else {
-                        orderModel.updateOne({orderId: reqOrderId}, {
-                            $inc: { paidValue: reqPaidValue, paymentsNumber: reqPaymentsNumber },
-                            $push: { payersIds: reqPayersIds }
-                        })
-                        .then(() => {
-                            res.status(200).send()
-                        })
-                    }
-                }
-            })
-            .catch((e) => {
-                res.status(500).send()
-            })
-        }
-    }).catch(() => {
-        res.status(500).send()
-    })
-}
-
-export function getOrdersByPartner(req, res){
-    var reqBodyValues = Object.values(req.body)
-    reqPartnerId = reqBodyValues[0]
-
-    getOrdersDocByPartner().then(() => {
+export async function getOrdersByPartner(req, res) {
+    try {
+        const [partnerId] = Object.values(req.body)
+        
+        const ordersArray = await getOrdersDocByPartner(partnerId)
         res.status(200).send(ordersArray)
-    })
+        
+    } catch (error) {
+        res.status(500).send()
+    }
 }
