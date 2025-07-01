@@ -28,7 +28,6 @@ async function getAdminDoc(){
 async function getOrdersDocByPartner(){
     ordersArray = await orderModel.find({ partnerId: reqPartnerId })
                                       .sort({ createdAt: -1 }) 
-                                      .limit(20)
                                       .lean(); 
 }
 
