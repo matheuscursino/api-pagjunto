@@ -2,6 +2,7 @@ import mongoose from 'mongoose'
 const { Schema } = mongoose
 
 const orderSchema = new Schema({
+    name: String,
     orderId: mongoose.ObjectId,
     partnerId: String,
     totalValue: Number,

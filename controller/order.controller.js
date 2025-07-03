@@ -112,7 +112,7 @@ export async function getOrder(req, res) {
 
 export async function createOrder(req, res) {
     try {
-        const [partnerId, totalValue, apiKey] = Object.values(req.body)
+        const [name, partnerId, totalValue, apiKey] = Object.values(req.body)
         
         const partnerDoc = await getPartnerDoc(partnerId)
         
@@ -126,6 +126,7 @@ export async function createOrder(req, res) {
         
         const orderId = new mongoose.Types.ObjectId()
         const order = new orderModel({
+            name,
             orderId,
             partnerId,
             totalValue,
