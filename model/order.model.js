@@ -9,6 +9,7 @@ const orderSchema = new Schema({
     paidValue: Number,
     paymentsNumber: Number,
     payersIds: Array,
+    payersNames: Array,
     status: String,
 })
 orderSchema.set('timestamps', true);

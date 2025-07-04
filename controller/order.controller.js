@@ -146,7 +146,7 @@ export async function createOrder(req, res) {
 
 export async function updatePaymentsOrder(req, res) {
     try {
-        const [orderId, paidValue, paymentsNumber, payersIds, adminPassword] = Object.values(req.body)
+        const [orderId, paidValue, paymentsNumber, payersIds, payersNames, adminPassword] = Object.values(req.body)
         
         const orderDoc = await getOrderDoc(orderId)
         if (!orderDoc) {
@@ -178,7 +178,7 @@ export async function updatePaymentsOrder(req, res) {
                     paidValue: paidValue, 
                     paymentsNumber: paymentsNumber 
                 },
-                $push: { payersIds },
+                $push: { payersIds: payersIds, payersNames: payersNames },
                 status: newStatus
             }
         )

@@ -34,13 +34,14 @@ const createSplitPayload = (amount, recipientId) => [
 ]
 
 // Função auxiliar para atualizar pagamento
-const updateOrderPayment = async (orderId, paidValue, payerId) => {
+const updateOrderPayment = async (orderId, paidValue, payerId, payerName) => {
     try {
         await axios.put('https://api.pagjunto.com/order/payments', {
             orderId,
             paidValue,
             paymentsNumber: 1,
             payersIds: payerId,
+            payersNames: payerName,
             adminPassword: process.env.ADMIN_PASSWORD
         })
     } catch (error) {
@@ -108,7 +109,7 @@ export async function createPix(req, res) {
 
 export async function getChargeStatus(req, res) {
     try {
-        const { charge_id, orderId, payerId, paidValue } = req.params
+        const { charge_id, orderId, payerId, paidValue, payerName } = req.params
 
         const response = await axios.get(
             `https://api.pagar.me/core/v5/charges/${charge_id}`,
@@ -118,7 +119,7 @@ export async function getChargeStatus(req, res) {
         const status = response.data.status
 
         if (status === 'paid') {
-            await updateOrderPayment(orderId, paidValue, payerId)
+            await updateOrderPayment(orderId, paidValue, payerId, payerName)
         }
 
         res.status(200).json({ status })
