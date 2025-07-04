@@ -1,44 +1,53 @@
 import axios from 'axios'
+import orderModel from '../model/order.model.js' // Supondo que você ainda precise disso em outro lugar
 
 // Constantes para configuração
 const PIX_EXPIRY_TIME = 3600
-const PLATFORM_FEE_PERCENTAGE = 0.01
-const PARTNER_PERCENTAGE = 0.99
+const PLATFORM_FEE_PERCENTAGE = 0.01 // 1%
+const PARTNER_PERCENTAGE = 1 - PLATFORM_FEE_PERCENTAGE // 99%
 
 // Função auxiliar para criar headers de autenticação
 const createAuthHeaders = () => ({
     'Content-Type': 'application/json',
-    'Authorization': 'Basic ' + Buffer.from(process.env.PAGARME_KEY).toString('base64')
+    'Authorization': 'Basic ' + Buffer.from(process.env.PAGARME_KEY + ':').toString('base64')
 })
 
-// Função auxiliar para converter valor para centavos
-const toCents = (amount) => Math.round(Number(amount) * 100)
+// Função auxiliar para criar payload de split (CORRIGIDA)
+const createSplitPayload = (totalAmountInCents, recipientId) => {
+    // Calcula a parte do parceiro e arredonda para baixo para garantir um inteiro
+    const partnerAmount = Math.floor(totalAmountInCents * PARTNER_PERCENTAGE);
+    
+    // A parte da plataforma é o restante, garantindo que a soma seja exata
+    const platformAmount = totalAmountInCents - partnerAmount;
 
-// Função auxiliar para criar payload de split
-const createSplitPayload = (amount, recipientId) => [
-    {
-        amount: toCents(amount) * PARTNER_PERCENTAGE,
-        recipient_id: recipientId,
-        type: "flat"
-    },
-    {
-        amount: toCents(amount) * PLATFORM_FEE_PERCENTAGE,
-        recipient_id: process.env.RECEBEDOR_PLATAFORMA_ID,
-        type: "flat",
-        options: {
-            charge_remainder_fee: true,
-            charge_processing_fee: true,
-            liable: true
+    return [
+        {
+            amount: partnerAmount, // Valor já é um inteiro em centavos
+            recipient_id: recipientId,
+            type: "flat"
+        },
+        {
+            amount: platformAmount, // Valor já é um inteiro em centavos
+            recipient_id: process.env.RECEBEDOR_PLATAFORMA_ID,
+            type: "flat",
+            options: {
+                charge_remainder_fee: true,
+                charge_processing_fee: true,
+                liable: true
+            }
         }
-    }
-]
+    ];
+}
 
 // Função auxiliar para atualizar pagamento
 const updateOrderPayment = async (orderId, paidValue, payerId, payerName) => {
     try {
+        // O valor aqui deve estar em Reais, pois o frontend envia assim para a rota de status
+        const valueInReais = parseFloat(paidValue);
+
         await axios.put('https://api.pagjunto.com/order/payments', {
             orderId,
-            paidValue,
+            paidValue: valueInReais, // Garante que estamos enviando o valor em Reais para o DB
             paymentsNumber: 1,
             payersIds: payerId,
             payersNames: payerName,
@@ -51,10 +60,11 @@ const updateOrderPayment = async (orderId, paidValue, payerId, payerName) => {
 
 export async function createPix(req, res) {
     try {
-        const { cpf, amount, recipient_id } = req.body
+        // CORRIGIDO: Captura o 'name' e usa o 'amount' como centavos
+        const { name, cpf, amount, recipient_id } = req.body
 
-        if (!cpf || !amount) {
-            return res.status(400).json({ error: 'CPF e valor são obrigatórios.' })
+        if (!name || !cpf || !amount) {
+            return res.status(400).json({ error: 'Nome, CPF e valor são obrigatórios.' })
         }
 
         const orderPayload = {
@@ -64,18 +74,18 @@ export async function createPix(req, res) {
                     name: 'Pagamento Pix',
                     quantity: 1,
                     description: "pagamento",
-                    amount: toCents(amount)
+                    amount: amount // USA O VALOR DIRETAMENTE (JÁ ESTÁ EM CENTAVOS)
                 }
             ],
             customer: {
-                name: 'Cliente do Pix',
-                email: 'cliente@exemplo.com',
+                name: name, // USA O NOME RECEBIDO DO FORMULÁRIO
+                email: 'cliente@exemplo.com', // Idealmente, capturar isso também no futuro
                 type: 'individual',
                 phones: {
                     mobile_phone: { 
                         country_code: '55', 
                         area_code: '12', 
-                        number: '991424278' 
+                        number: '991424278' // Idealmente, capturar isso também
                     }
                 },
                 document: cpf
@@ -86,7 +96,7 @@ export async function createPix(req, res) {
                     pix: {
                         expires_in: PIX_EXPIRY_TIME
                     },
-                    split: createSplitPayload(amount, recipient_id)
+                    split: createSplitPayload(amount, recipient_id) // Passa o valor em centavos
                 }
             ]
         }
@@ -98,7 +108,6 @@ export async function createPix(req, res) {
         )
 
         const charge = response.data.charges[0]
-
         return res.status(200).json({ data: charge })
 
     } catch (error) {
@@ -109,7 +118,8 @@ export async function createPix(req, res) {
 
 export async function getChargeStatus(req, res) {
     try {
-        const { charge_id, orderId, payerId, paidValue, payerName } = req.params
+        // CORRIGIDO: Captura o 'name' também dos parâmetros
+        const { charge_id, orderId, payerId, paidValue, name } = req.params
 
         const response = await axios.get(
             `https://api.pagar.me/core/v5/charges/${charge_id}`,
@@ -119,7 +129,8 @@ export async function getChargeStatus(req, res) {
         const status = response.data.status
 
         if (status === 'paid') {
-            await updateOrderPayment(orderId, paidValue, payerId, payerName)
+            // Passa o nome para a função de atualização
+            await updateOrderPayment(orderId, paidValue, payerId, name)
         }
 
         res.status(200).json({ status })
