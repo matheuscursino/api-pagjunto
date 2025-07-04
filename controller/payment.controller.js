@@ -40,7 +40,7 @@ const createSplitPayload = (totalAmountInCents, recipientId) => {
 }
 
 // Função auxiliar para atualizar pagamento
-const updateOrderPayment = async (orderId, paidValue, payerId, payerName) => {
+const updateOrderPayment = async (orderId, paidValue, payerId, name) => {
     try {
         // O valor aqui deve estar em Reais, pois o frontend envia assim para a rota de status
         const valueInReais = parseFloat(paidValue);
@@ -50,7 +50,7 @@ const updateOrderPayment = async (orderId, paidValue, payerId, payerName) => {
             paidValue: valueInReais, // Garante que estamos enviando o valor em Reais para o DB
             paymentsNumber: 1,
             payersIds: payerId,
-            payersNames: payerName,
+            payersNames: name,
             adminPassword: process.env.ADMIN_PASSWORD
         })
     } catch (error) {
