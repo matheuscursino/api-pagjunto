@@ -10,6 +10,7 @@ const orderSchema = new Schema({
     paymentsNumber: Number,
     payersIds: Array,
     payersNames: Array,
+    payersValues: Array,
     status: String,
 })
 orderSchema.set('timestamps', true);

@@ -51,6 +51,7 @@ const updateOrderPayment = async (orderId, paidValue, payerId, name) => {
             paymentsNumber: 1,
             payersIds: payerId,
             payersNames: name,
+            payersValues: valueInReais,
             adminPassword: process.env.ADMIN_PASSWORD
         })
     } catch (error) {
