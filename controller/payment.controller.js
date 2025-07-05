@@ -10,7 +10,7 @@ const PARTNER_PERCENTAGE = 1 - PLATFORM_FEE_PERCENTAGE // 99%
 // Função auxiliar para criar headers de autenticação
 const createAuthHeaders = () => ({
     'Content-Type': 'application/json',
-    'Authorization': 'Basic ' + Buffer.from(process.env.PAGARME_KEY + ':').toString('base64')
+    'Authorization': 'Basic ' + Buffer.from(process.env.PAGARME_KEY + '::').toString('base64')
 })
 
 // Função auxiliar para criar payload de split (CORRIGIDA)
