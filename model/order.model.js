@@ -11,7 +11,6 @@ const orderSchema = new Schema({
     payersIds: Array,
     payersNames: Array,
     payersValues: Array,
-    pagarmeChargeId: { type: String, required: false, index: true },
     status: String,
 })
 orderSchema.set('timestamps', true);
