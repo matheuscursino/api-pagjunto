@@ -1,5 +1,6 @@
 import axios from 'axios'
 import orderModel from '../model/order.model.js' // Supondo que você ainda precise disso em outro lugar
+import crypto from 'crypto'
 
 // Constantes para configuração
 const PIX_EXPIRY_TIME = 3600
@@ -62,7 +63,7 @@ const updateOrderPayment = async (orderId, paidValue, payerId, name) => {
 export async function createPix(req, res) {
     try {
         // CORRIGIDO: Captura o 'name' e usa o 'amount' como centavos
-        const { name, cpf, amount, recipient_id } = req.body
+        const { name, cpf, amount, recipient_id, orderId } = req.body
 
         if (!name || !cpf || !amount) {
             return res.status(400).json({ error: 'Nome, CPF e valor são obrigatórios.' })
@@ -109,6 +110,13 @@ export async function createPix(req, res) {
         )
 
         const charge = response.data.charges[0]
+
+        if (charge && charge.id) {
+            await orderModel.updateOne(
+                { orderId: orderId },
+                { $set: { pagarmeChargeId: charge.id } }
+            );
+        }
         return res.status(200).json({ data: charge })
 
     } catch (error) {
@@ -139,5 +147,55 @@ export async function getChargeStatus(req, res) {
     } catch (error) {
         console.error('Erro ao consultar status:', error.response?.data || error.message)
         res.status(500).json({ error: 'Erro ao consultar status do pagamento' })
+    }
+}
+
+export async function handlePagarmeWebhook(req, res) {
+    const signature = req.headers['x-hub-signature'] || '';
+    
+    try {
+        // Passo 1: Validar a assinatura para garantir que a requisição veio da Pagar.me
+        // Usamos o 'req.rawBody' que configuramos no main.js
+        const expectedSignature = crypto.createHmac('sha1', process.env.PAGARME_KEY)
+                                        .update(req.rawBody)
+                                        .digest('hex');
+
+        if (signature.replace('sha1=', '') !== expectedSignature) {
+            return res.status(401).send('Invalid signature.');
+        }
+
+        const { type, data } = req.body;
+
+        // Passo 2: Verificar se o evento é 'charge.paid'
+        if (type === 'charge.paid') {
+            const chargeId = data.id;
+
+            // Passo 3: Encontrar a ordem no seu banco de dados usando o chargeId
+            const order = await orderModel.findOne({ pagarmeChargeId: chargeId });
+
+            if (!order) {
+                // Cobrança não encontrada no nosso sistema, talvez não seja nossa
+                return res.status(404).send('Order not found for this charge.');
+            }
+            
+            // Se a ordem já estiver paga, não fazemos nada. Isso evita processamento duplicado.
+            if (order.status === 'paid') {
+                return res.status(200).send('Order already paid.');
+            }
+
+            // Passo 4: Atualizar a ordem. Reutilizamos a lógica da sua função `updateOrderPayment`
+            const paidValueInReais = data.amount / 100;
+            const payerId = data.customer?.document || 'N/A';
+            const payerName = data.customer?.name || 'N/A';
+
+            await updateOrderPayment(order.orderId, paidValueInReais, payerId, payerName);
+        }
+
+        // Responda com 200 OK para a Pagar.me saber que recebemos o webhook.
+        res.status(200).send('Webhook processed successfully.');
+
+    } catch (error) {
+        console.error('Erro ao processar webhook da Pagar.me:', error);
+        res.status(500).send('Internal Server Error');
     }
 }

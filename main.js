@@ -25,7 +25,11 @@ main().then(()=>{
   console.log(err)
 })
 
-app.use(bodyParser.json())
+app.use(bodyParser.json({
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  }
+}));
 app.use(cors());
 app.use(bodyParser.urlencoded({
     extended: true
