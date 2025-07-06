@@ -45,7 +45,7 @@ const updateOrderPayment = async (orderId, paidValue, payerId, name) => {
         // O valor aqui deve estar em Reais, pois o frontend envia assim para a rota de status
         const valueInReais = parseFloat(paidValue);
 
-        await axios.put('https://api.pagjunto.com/order/payments', {
+        await axios.put(`${process.env.SITE_URL}/order/payments`, {
             orderId,
             paidValue: valueInReais, // Garante que estamos enviando o valor em Reais para o DB
             paymentsNumber: 1,
@@ -59,16 +59,19 @@ const updateOrderPayment = async (orderId, paidValue, payerId, name) => {
     }
 }
 
+
+
 export async function createPix(req, res) {
     try {
-        // CORRIGIDO: Captura o 'name' e usa o 'amount' como centavos
-        const { name, cpf, amount, recipient_id } = req.body
+        // RECEBA O orderId DO FRONT-END
+        const { name, cpf, amount, recipient_id, orderId } = req.body;
 
-        if (!name || !cpf || !amount) {
-            return res.status(400).json({ error: 'Nome, CPF e valor são obrigatórios.' })
+        if (!name || !cpf || !amount || !orderId) {
+            return res.status(400).json({ error: 'Todos os campos, incluindo orderId, são obrigatórios.' });
         }
 
-        const orderPayload = {
+        // ... (seu orderPayload continua o mesmo)
+                const orderPayload = {
             reference_id: `order-${Date.now()}`,
             items: [
                 {
@@ -106,14 +109,23 @@ export async function createPix(req, res) {
             'https://api.pagar.me/core/v5/orders',
             orderPayload,
             { headers: createAuthHeaders() }
-        )
+        );
 
-        const charge = response.data.charges[0]
-        return res.status(200).json({ data: charge })
+        const charge = response.data.charges[0];
+
+        // VINCULE O charge.id DA PAGAR.ME À SUA ORDEM INTERNA
+        if (charge && charge.id) {
+            await orderModel.updateOne(
+                { orderId: orderId },
+                { $push: { pagarmeChargeId: charge.id } }
+            );
+        }
+
+        return res.status(200).json({ data: charge });
 
     } catch (error) {
-        console.error('Erro ao criar pagamento Pix:', error.response?.data || error.message)
-        return res.status(500).json({ error: 'Erro ao criar pagamento Pix.' })
+        console.error('Erro ao criar pagamento Pix:', error.response?.data || error.message);
+        return res.status(500).json({ error: 'Erro ao criar pagamento Pix.' });
     }
 }
 
@@ -139,5 +151,45 @@ export async function getChargeStatus(req, res) {
     } catch (error) {
         console.error('Erro ao consultar status:', error.response?.data || error.message)
         res.status(500).json({ error: 'Erro ao consultar status do pagamento' })
+    }
+}
+
+
+export async function handlePagarmeWebhook(req, res) {
+    try {
+        const { type, data } = req.body;
+
+        // Passo 1: Verificar se o evento é 'charge.paid'
+        if (type === 'charge.paid') {
+            const chargeId = data.id;
+
+            // Passo 2: Encontrar a ordem no seu banco de dados usando o chargeId
+            const order = await orderModel.findOne({ pagarmeChargeId: chargeId });
+
+            if (!order) {
+                // É bom manter este log para o caso de cobranças não encontradas
+                console.error(`Webhook para chargeId ${chargeId} recebido, mas nenhuma ordem correspondente foi encontrada.`);
+                return res.status(404).send('Order not found for this charge.');
+            }
+            
+            // Se a ordem já estiver paga, não fazemos nada.
+            if (order.status === 'paid') {
+                return res.status(200).send('Order already paid.');
+            }
+
+            // Passo 3: Atualizar a ordem.
+            const paidValueInReais = data.amount / 100;
+            const payerId = data.customer?.document || 'N/A';
+            const payerName = data.customer?.name || 'N/A';
+
+            await updateOrderPayment(order.orderId, paidValueInReais, payerId, payerName);
+        }
+
+        // Responda com 200 OK para a Pagar.me saber que recebemos o webhook.
+        res.status(200).send('Webhook processed.');
+
+    } catch (error) {
+        console.error('Erro ao processar webhook da Pagar.me:', error);
+        res.status(500).send('Internal Server Error');
     }
 }

@@ -11,7 +11,7 @@ import cors from 'cors';
 
 
 const app = express()
-const port = 80
+const port = 3000
 
 dotenv.config()
 
