@@ -1,5 +1,6 @@
 import axios from 'axios'
-import orderModel from '../model/order.model.js' // Supondo que você ainda precise disso em outro lugar
+import orderModel from '../model/order.model.js'
+import { io, emitToRoom, getRoomInfo } from '../main.js';
 
 // Constantes para configuração
 const PIX_EXPIRY_TIME = 3600
@@ -12,22 +13,19 @@ const createAuthHeaders = () => ({
     'Authorization': 'Basic ' + Buffer.from(process.env.PAGARME_KEY + ':').toString('base64')
 })
 
-// Função auxiliar para criar payload de split (CORRIGIDA)
+// Função auxiliar para criar payload de split
 const createSplitPayload = (totalAmountInCents, recipientId) => {
-    // Calcula a parte do parceiro e arredonda para baixo para garantir um inteiro
     const partnerAmount = Math.floor(totalAmountInCents * PARTNER_PERCENTAGE);
-    
-    // A parte da plataforma é o restante, garantindo que a soma seja exata
     const platformAmount = totalAmountInCents - partnerAmount;
 
     return [
         {
-            amount: partnerAmount, // Valor já é um inteiro em centavos
+            amount: partnerAmount,
             recipient_id: recipientId,
             type: "flat"
         },
         {
-            amount: platformAmount, // Valor já é um inteiro em centavos
+            amount: platformAmount,
             recipient_id: process.env.RECEBEDOR_PLATAFORMA_ID,
             type: "flat",
             options: {
@@ -39,57 +37,102 @@ const createSplitPayload = (totalAmountInCents, recipientId) => {
     ];
 }
 
-// Função auxiliar para atualizar pagamento
+// Função auxiliar para atualizar pagamento - CORRIGIDA
 const updateOrderPayment = async (orderId, paidValue, payerId, name) => {
     try {
-        // O valor aqui deve estar em Reais, pois o frontend envia assim para a rota de status
         const valueInReais = parseFloat(paidValue);
 
+        // CONVERSÃO CRUCIAL: Garantir que orderId seja sempre string
+        const orderIdString = orderId.toString();
+
+        console.log(`🔄 Iniciando atualização de pagamento para ordem: ${orderIdString}`);
+        console.log(`💰 Valor: R$ ${valueInReais}, Pagador: ${name}`);
+        console.log(`🔍 Tipo do orderId: ${typeof orderId}, Valor original: ${orderId}`);
+
+        // Atualizar o pagamento no banco
         await axios.put(`${process.env.SITE_URL}/order/payments`, {
-            orderId,
-            paidValue: valueInReais, // Garante que estamos enviando o valor em Reais para o DB
+            orderId: orderIdString,
+            paidValue: valueInReais,
             paymentsNumber: 1,
             payersIds: payerId,
             payersNames: name,
             payersValues: valueInReais,
             adminPassword: process.env.ADMIN_PASSWORD
-        })
+        });
+
+        console.log(`✅ Pagamento atualizado no banco para ordem: ${orderIdString}`);
+
+        // Verificar se o Socket.IO está disponível
+        if (!io) {
+            console.error('❌ Socket.IO não está disponível!');
+            return false;
+        }
+
+        // Verificar se existem clientes na sala usando a string do ID
+        const roomInfo = getRoomInfo(orderIdString);
+        console.log(`📊 Info da sala ${orderIdString}:`, roomInfo);
+
+        if (!roomInfo.exists || roomInfo.clientCount === 0) {
+            console.log(`⚠️  Nenhum cliente na sala ${orderIdString} para receber o evento`);
+            return false;
+        }
+
+        // Emitir evento para a sala
+        const eventData = {
+            message: 'Pagamento confirmado!',
+            orderId: orderIdString,
+            paidValue: valueInReais,
+            payerName: name,
+            timestamp: new Date().toISOString()
+        };
+
+        console.log(`📡 Emitindo 'paymentConfirmed' para sala: ${orderIdString}`);
+        console.log(`📦 Dados do evento:`, eventData);
+
+        // Usar a função emitToRoom em vez de emitir diretamente
+        const emitSuccess = emitToRoom(orderIdString, 'paymentConfirmed', eventData);
+        
+        if (emitSuccess) {
+            console.log(`✅ Evento 'paymentConfirmed' emitido com sucesso para sala: ${orderIdString}`);
+        } else {
+            console.log(`❌ Falha ao emitir evento para sala: ${orderIdString}`);
+        }
+
+        return true;
+
     } catch (error) {
-        console.error('Erro ao atualizar pagamento:', error.response?.data || error.message)
+        console.error('❌ Erro ao atualizar pagamento:', error.response?.data || error.message);
+        return false;
     }
 }
 
-
-
 export async function createPix(req, res) {
     try {
-        // RECEBA O orderId DO FRONT-END
         const { name, cpf, amount, recipient_id, orderId } = req.body;
 
         if (!name || !cpf || !amount || !orderId) {
             return res.status(400).json({ error: 'Todos os campos, incluindo orderId, são obrigatórios.' });
         }
 
-        // ... (seu orderPayload continua o mesmo)
-                const orderPayload = {
+        const orderPayload = {
             reference_id: `order-${Date.now()}`,
             items: [
                 {
                     name: 'Pagamento Pix',
                     quantity: 1,
                     description: "pagamento",
-                    amount: amount // USA O VALOR DIRETAMENTE (JÁ ESTÁ EM CENTAVOS)
+                    amount: amount
                 }
             ],
             customer: {
-                name: name, // USA O NOME RECEBIDO DO FORMULÁRIO
-                email: 'cliente@exemplo.com', // Idealmente, capturar isso também no futuro
+                name: name,
+                email: 'cliente@exemplo.com',
                 type: 'individual',
                 phones: {
                     mobile_phone: { 
                         country_code: '55', 
                         area_code: '12', 
-                        number: '991424278' // Idealmente, capturar isso também
+                        number: '991424278'
                     }
                 },
                 document: cpf
@@ -100,7 +143,7 @@ export async function createPix(req, res) {
                     pix: {
                         expires_in: PIX_EXPIRY_TIME
                     },
-                    split: createSplitPayload(amount, recipient_id) // Passa o valor em centavos
+                    split: createSplitPayload(amount, recipient_id)
                 }
             ]
         }
@@ -113,7 +156,6 @@ export async function createPix(req, res) {
 
         const charge = response.data.charges[0];
 
-        // VINCULE O charge.id DA PAGAR.ME À SUA ORDEM INTERNA
         if (charge && charge.id) {
             await orderModel.updateOne(
                 { orderId: orderId },
@@ -131,7 +173,6 @@ export async function createPix(req, res) {
 
 export async function getChargeStatus(req, res) {
     try {
-        // CORRIGIDO: Captura o 'name' também dos parâmetros
         const { charge_id, orderId, payerId, paidValue, name } = req.params
 
         const response = await axios.get(
@@ -142,7 +183,6 @@ export async function getChargeStatus(req, res) {
         const status = response.data.status
 
         if (status === 'paid') {
-            // Passa o nome para a função de atualização
             await updateOrderPayment(orderId, paidValue, payerId, name)
         }
 
@@ -154,42 +194,47 @@ export async function getChargeStatus(req, res) {
     }
 }
 
-
 export async function handlePagarmeWebhook(req, res) {
     try {
         const { type, data } = req.body;
+        console.log('🔔 Webhook recebido:', { type, chargeId: data?.id });
 
-        // Passo 1: Verificar se o evento é 'charge.paid'
         if (type === 'charge.paid') {
             const chargeId = data.id;
+            console.log('💰 Processando pagamento confirmado para chargeId:', chargeId);
 
-            // Passo 2: Encontrar a ordem no seu banco de dados usando o chargeId
             const order = await orderModel.findOne({ pagarmeChargeId: chargeId });
 
             if (!order) {
-                // É bom manter este log para o caso de cobranças não encontradas
-                console.error(`Webhook para chargeId ${chargeId} recebido, mas nenhuma ordem correspondente foi encontrada.`);
+                console.error(`❌ Webhook para chargeId ${chargeId} recebido, mas nenhuma ordem correspondente foi encontrada.`);
                 return res.status(404).send('Order not found for this charge.');
             }
             
-            // Se a ordem já estiver paga, não fazemos nada.
+            console.log('✅ Ordem encontrada:', { orderId: order.orderId, status: order.status });
+
             if (order.status === 'paid') {
+                console.log('⚠️  Ordem já estava paga, ignorando webhook.');
                 return res.status(200).send('Order already paid.');
             }
 
-            // Passo 3: Atualizar a ordem.
             const paidValueInReais = data.amount / 100;
             const payerId = data.customer?.document || 'N/A';
             const payerName = data.customer?.name || 'N/A';
 
+            console.log('🔄 Atualizando pagamento via webhook:', { 
+                orderId: order.orderId, 
+                paidValue: paidValueInReais, 
+                payerId, 
+                payerName 
+            });
+
             await updateOrderPayment(order.orderId, paidValueInReais, payerId, payerName);
         }
 
-        // Responda com 200 OK para a Pagar.me saber que recebemos o webhook.
         res.status(200).send('Webhook processed.');
 
     } catch (error) {
-        console.error('Erro ao processar webhook da Pagar.me:', error);
+        console.error('❌ Erro ao processar webhook da Pagar.me:', error);
         res.status(500).send('Internal Server Error');
     }
 }

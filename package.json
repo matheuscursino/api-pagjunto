@@ -10,7 +10,8 @@
     "express-subdomain": "^1.0.6",
     "mongodb": "^6.16.0",
     "mongoose": "^8.15.0",
-    "pagarme": "^4.35.2"
+    "pagarme": "^4.35.2",
+    "socket.io": "^4.8.1"
   },
   "name": "api-pagjunto",
   "version": "1.0.0",
