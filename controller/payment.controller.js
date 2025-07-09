@@ -37,17 +37,14 @@ const createSplitPayload = (totalAmountInCents, recipientId) => {
     ];
 }
 
-// Função auxiliar para atualizar pagamento - CORRIGIDA
-const updateOrderPayment = async (orderId, paidValue, payerId, name) => {
+// Função auxiliar para atualizar pagamento
+const updateOrderPayment = async (orderId, paidValue, payerId, name, payerPhone) => {
     try {
         const valueInReais = parseFloat(paidValue);
-
-        // CONVERSÃO CRUCIAL: Garantir que orderId seja sempre string
         const orderIdString = orderId.toString();
 
         console.log(`🔄 Iniciando atualização de pagamento para ordem: ${orderIdString}`);
-        console.log(`💰 Valor: R$ ${valueInReais}, Pagador: ${name}`);
-        console.log(`🔍 Tipo do orderId: ${typeof orderId}, Valor original: ${orderId}`);
+        console.log(`💰 Valor: R$ ${valueInReais}, Pagador: ${name}, Telefone: ${payerPhone}`);
 
         // Atualizar o pagamento no banco
         await axios.put(`${process.env.SITE_URL}/order/payments`, {
@@ -57,27 +54,23 @@ const updateOrderPayment = async (orderId, paidValue, payerId, name) => {
             payersIds: payerId,
             payersNames: name,
             payersValues: valueInReais,
-            adminPassword: process.env.ADMIN_PASSWORD
+            adminPassword: process.env.ADMIN_PASSWORD,
+            payersPhone: payerPhone
         });
 
         console.log(`✅ Pagamento atualizado no banco para ordem: ${orderIdString}`);
 
-        // Verificar se o Socket.IO está disponível
         if (!io) {
             console.error('❌ Socket.IO não está disponível!');
             return false;
         }
 
-        // Verificar se existem clientes na sala usando a string do ID
         const roomInfo = getRoomInfo(orderIdString);
-        console.log(`📊 Info da sala ${orderIdString}:`, roomInfo);
-
         if (!roomInfo.exists || roomInfo.clientCount === 0) {
-            console.log(`⚠️  Nenhum cliente na sala ${orderIdString} para receber o evento`);
+            console.log(`⚠️ Nenhum cliente na sala ${orderIdString} para receber o evento`);
             return false;
         }
 
-        // Emitir evento para a sala
         const eventData = {
             message: 'Pagamento confirmado!',
             orderId: orderIdString,
@@ -86,10 +79,6 @@ const updateOrderPayment = async (orderId, paidValue, payerId, name) => {
             timestamp: new Date().toISOString()
         };
 
-        console.log(`📡 Emitindo 'paymentConfirmed' para sala: ${orderIdString}`);
-        console.log(`📦 Dados do evento:`, eventData);
-
-        // Usar a função emitToRoom em vez de emitir diretamente
         const emitSuccess = emitToRoom(orderIdString, 'paymentConfirmed', eventData);
         
         if (emitSuccess) {
@@ -108,6 +97,8 @@ const updateOrderPayment = async (orderId, paidValue, payerId, name) => {
 
 export async function createPix(req, res) {
     try {
+        // ATENÇÃO: Esta função não foi alterada para receber o telefone do front-end.
+        // Ela ainda usa o valor hardcoded como no código original que você forneceu.
         const { name, cpf, amount, recipient_id, orderId } = req.body;
 
         if (!name || !cpf || !amount || !orderId) {
@@ -173,7 +164,7 @@ export async function createPix(req, res) {
 
 export async function getChargeStatus(req, res) {
     try {
-        const { charge_id, orderId, payerId, paidValue, name } = req.params
+        const { charge_id, orderId, payerId, paidValue, name, payerPhone } = req.params
 
         const response = await axios.get(
             `https://api.pagar.me/core/v5/charges/${charge_id}`,
@@ -183,7 +174,7 @@ export async function getChargeStatus(req, res) {
         const status = response.data.status
 
         if (status === 'paid') {
-            await updateOrderPayment(orderId, paidValue, payerId, name)
+            await updateOrderPayment(orderId, paidValue, payerId, name, payerPhone)
         }
 
         res.status(200).json({ status })
@@ -201,8 +192,6 @@ export async function handlePagarmeWebhook(req, res) {
 
         if (type === 'charge.paid') {
             const chargeId = data.id;
-            console.log('💰 Processando pagamento confirmado para chargeId:', chargeId);
-
             const order = await orderModel.findOne({ pagarmeChargeId: chargeId });
 
             if (!order) {
@@ -210,25 +199,18 @@ export async function handlePagarmeWebhook(req, res) {
                 return res.status(404).send('Order not found for this charge.');
             }
             
-            console.log('✅ Ordem encontrada:', { orderId: order.orderId, status: order.status });
-
             if (order.status === 'paid') {
-                console.log('⚠️  Ordem já estava paga, ignorando webhook.');
+                console.log('⚠️ Ordem já estava paga, ignorando webhook.');
                 return res.status(200).send('Order already paid.');
             }
 
             const paidValueInReais = data.amount / 100;
             const payerId = data.customer?.document || 'N/A';
             const payerName = data.customer?.name || 'N/A';
+            const customerPhone = data.customer?.phones?.mobile_phone;
+            const payerPhone = customerPhone ? `+${customerPhone.country_code}${customerPhone.area_code}${customerPhone.number}` : 'N/A';
 
-            console.log('🔄 Atualizando pagamento via webhook:', { 
-                orderId: order.orderId, 
-                paidValue: paidValueInReais, 
-                payerId, 
-                payerName 
-            });
-
-            await updateOrderPayment(order.orderId, paidValueInReais, payerId, payerName);
+            await updateOrderPayment(order.orderId, paidValueInReais, payerId, payerName, payerPhone);
         }
 
         res.status(200).send('Webhook processed.');

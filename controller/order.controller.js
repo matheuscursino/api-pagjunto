@@ -20,13 +20,10 @@ const getPartnerDashboardData = async (partnerId) => {
     // Pipeline de Agregação do MongoDB
     const aggregationPipeline = [
         // Estágio 1: Filtrar todos os documentos para o parceiro desejado.
-        // Este é o passo mais importante para a performance.
         {
             $match: { partnerId: partnerId }
         },
         // Estágio 2: Usar $facet para executar duas operações em paralelo:
-        // 1. Calcular as estatísticas de TODAS as orders filtradas.
-        // 2. Obter a lista das 100 mais recentes.
         {
             $facet: {
                 // Ramo 1: "metadata" para as estatísticas
@@ -37,8 +34,7 @@ const getPartnerDashboardData = async (partnerId) => {
                             totalValue: { $sum: '$totalValue' },
                             paidValue: { $sum: '$paidValue' },
                             totalOrders: { $sum: 1 }, // Conta 1 para cada documento
-                            totalPayers: { $sum: { $size: '$payersIds' } }, // Soma o tamanho de cada array 'payersIds'
-                            // Contagem condicional para cada status
+                            totalPayers: { $sum: { $size: '$payersIds' } },
                             paidOrders: {
                                 $sum: { $cond: [{ $eq: ['$status', 'paid'] }, 1, 0] }
                             },
@@ -58,7 +54,7 @@ const getPartnerDashboardData = async (partnerId) => {
                 // Ramo 2: "recentOrders" para a lista
                 recentOrders: [
                     { $sort: { createdAt: -1 } }, // Ordena pelas mais recentes
-                    { $limit: 100 }               // Limita a 100 documentos
+                    { $limit: 100 }              // Limita a 100 documentos
                 ]
             }
         },
@@ -74,8 +70,7 @@ const getPartnerDashboardData = async (partnerId) => {
 
     const result = await orderModel.aggregate(aggregationPipeline);
 
-    // A agregação retorna um array. Se não houver orders para o parceiro,
-    // o array estará vazio. Nós tratamos isso para retornar um formato consistente.
+    // Se não houver orders para o parceiro, retorna um formato consistente.
     if (result.length === 0) {
         return {
             stats: {
@@ -133,6 +128,9 @@ export async function createOrder(req, res) {
             paidValue: 0,
             paymentsNumber: 0,
             payersIds: [],
+            payersNames: [],
+            payersValues: [],
+            payersPhone: [],
             status: 'fresh'
         })
         
@@ -146,7 +144,7 @@ export async function createOrder(req, res) {
 
 export async function updatePaymentsOrder(req, res) {
     try {
-        const [orderId, paidValue, paymentsNumber, payersIds, payersNames, payerValue, adminPassword] = Object.values(req.body)
+        const [orderId, paidValue, paymentsNumber, payersIds, payersNames, payerValue, adminPassword, payersPhone] = Object.values(req.body)
         
         const orderDoc = await getOrderDoc(orderId)
         if (!orderDoc) {
@@ -178,7 +176,7 @@ export async function updatePaymentsOrder(req, res) {
                     paidValue: paidValue, 
                     paymentsNumber: paymentsNumber 
                 },
-                $push: { payersIds: payersIds, payersNames: payersNames, payersValues: payerValue },
+                $push: { payersIds: payersIds, payersNames: payersNames, payersValues: payerValue, payersPhone: payersPhone },
                 status: newStatus
             }
         )
@@ -192,20 +190,18 @@ export async function updatePaymentsOrder(req, res) {
 
 export async function getOrdersByPartner(req, res) {
     try {
-        // Recomendo usar req.params ou req.query para IDs, mas mantendo seu código:
-        const { partnerId } = req.body; // Desestruturação é mais limpa
+        const { partnerId } = req.body;
 
         if (!partnerId) {
             return res.status(400).send({ message: 'partnerId é obrigatório.' });
         }
         
-        // Chama a nova função de agregação
         const dashboardData = await getPartnerDashboardData(partnerId);
         
         res.status(200).send(dashboardData);
         
     } catch (error) {
-        console.error('Erro ao buscar dados do parceiro:', error); // É bom logar o erro
+        console.error('Erro ao buscar dados do parceiro:', error);
         res.status(500).send({ message: 'Erro interno do servidor.' });
     }
 }
