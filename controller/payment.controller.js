@@ -99,7 +99,7 @@ export async function createPix(req, res) {
     try {
         // ATENÇÃO: Esta função não foi alterada para receber o telefone do front-end.
         // Ela ainda usa o valor hardcoded como no código original que você forneceu.
-        const { name, cpf, amount, recipient_id, orderId } = req.body;
+        const { name, cpf, amount, recipient_id, orderId, phone } = req.body;
 
         if (!name || !cpf || !amount || !orderId) {
             return res.status(400).json({ error: 'Todos os campos, incluindo orderId, são obrigatórios.' });
@@ -121,9 +121,9 @@ export async function createPix(req, res) {
                 type: 'individual',
                 phones: {
                     mobile_phone: { 
-                        country_code: '55', 
-                        area_code: '12', 
-                        number: '991424278'
+                        country_code: phone.country_code, 
+                        area_code: phone.area_code, 
+                        number: phone.number
                     }
                 },
                 document: cpf
