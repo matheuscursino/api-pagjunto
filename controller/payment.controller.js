@@ -4,8 +4,8 @@ import { io, emitToRoom, getRoomInfo } from '../main.js';
 
 // Constantes para configuração
 const PIX_EXPIRY_TIME = 3600
-const PLATFORM_FEE_PERCENTAGE = 0.01 // 1%
-const PARTNER_PERCENTAGE = 1 - PLATFORM_FEE_PERCENTAGE // 99%
+const PLATFORM_FEE_PERCENTAGE = 0.03 // 3%
+const PARTNER_PERCENTAGE = 1 - PLATFORM_FEE_PERCENTAGE // 97%
 
 // Função auxiliar para criar headers de autenticação
 const createAuthHeaders = () => ({
