@@ -128,9 +128,9 @@ app.get('/', (req, res) =>  {
     res.send("ok")
 })
 
-app.use('/order', orderRouter)
-app.use('/partner', partnerRouter)
-app.use('/payment', paymentRouter)
+app.use('/v1/order', orderRouter)
+app.use('/v1/partner', partnerRouter)
+app.use('/v1/payment', paymentRouter)
 
 httpServer.listen(port, () => {
     console.log(`server and websocket started on port: ${port}`)

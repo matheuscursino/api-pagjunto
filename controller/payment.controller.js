@@ -47,7 +47,7 @@ const updateOrderPayment = async (orderId, paidValue, payerId, name, payerPhone)
         console.log(`💰 Valor: R$ ${valueInReais}, Pagador: ${name}, Telefone: ${payerPhone}`);
 
         // Atualizar o pagamento no banco
-        await axios.put(`${process.env.SITE_URL}/order/payments`, {
+        await axios.put(`${process.env.SITE_URL}/v1/order/payments`, {
             orderId: orderIdString,
             paidValue: valueInReais,
             paymentsNumber: 1,
