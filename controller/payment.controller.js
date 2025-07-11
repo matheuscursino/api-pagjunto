@@ -53,7 +53,7 @@ const updateOrderPayment = async (orderId, paidValue, payerId, name, payerPhone)
             paymentsNumber: 1,
             payersIds: payerId,
             payersNames: name,
-            payersValues: valueInReais,
+            payerValue: valueInReais,
             adminPassword: process.env.ADMIN_PASSWORD,
             payersPhone: payerPhone
         });

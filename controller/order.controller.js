@@ -91,7 +91,7 @@ const getPartnerDashboardData = async (partnerId) => {
 
 export async function getOrder(req, res) {
     try {
-        const [orderId] = Object.values(req.body)
+        const { orderId }= req.body
         
         const orderDoc = await getOrderDoc(orderId)
         
@@ -107,7 +107,7 @@ export async function getOrder(req, res) {
 
 export async function createOrder(req, res) {
     try {
-        const [name, partnerId, totalValue, apiKey] = Object.values(req.body)
+        const { name, partnerId, totalValue, apiKey } = req.body
         
         const partnerDoc = await getPartnerDoc(partnerId)
         
@@ -144,7 +144,7 @@ export async function createOrder(req, res) {
 
 export async function updatePaymentsOrder(req, res) {
     try {
-        const [orderId, paidValue, paymentsNumber, payersIds, payersNames, payerValue, adminPassword, payersPhone] = Object.values(req.body)
+        const { orderId, paidValue, paymentsNumber, payersIds, payersNames, payerValue, adminPassword, payersPhone } = req.body
         
         const orderDoc = await getOrderDoc(orderId)
         if (!orderDoc) {

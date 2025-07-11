@@ -30,7 +30,7 @@ const hashPassword = (password) => {
 
 export async function getPartner(req, res) {
     try {
-        const [partnerId] = Object.values(req.body)
+        const { partnerId } = req.body
         
         const partnerDoc = await getPartnerDoc(partnerId)
         
@@ -52,7 +52,7 @@ export async function getPartner(req, res) {
 
 export async function createPartner(req, res) {
     try {
-        const [partnerName, email, partnerPassword, adminPassword, recipient_id] = Object.values(req.body)
+        const { partnerName, email, partnerPassword, adminPassword, recipient_id } = req.body
         
         const adminDoc = await getAdminDoc(adminPassword)
         if (!adminDoc) {
