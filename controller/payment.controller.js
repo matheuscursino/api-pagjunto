@@ -162,28 +162,6 @@ export async function createPix(req, res) {
     }
 }
 
-export async function getChargeStatus(req, res) {
-    try {
-        const { charge_id, orderId, payerId, paidValue, name, payerPhone } = req.params
-
-        const response = await axios.get(
-            `https://api.pagar.me/core/v5/charges/${charge_id}`,
-            { headers: createAuthHeaders() }
-        )
-
-        const status = response.data.status
-
-        if (status === 'paid') {
-            await updateOrderPayment(orderId, paidValue, payerId, name, payerPhone)
-        }
-
-        res.status(200).json({ status })
-
-    } catch (error) {
-        console.error('Erro ao consultar status:', error.response?.data || error.message)
-        res.status(500).json({ error: 'Erro ao consultar status do pagamento' })
-    }
-}
 
 export async function handlePagarmeWebhook(req, res) {
     try {
