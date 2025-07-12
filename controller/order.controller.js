@@ -3,6 +3,9 @@ import partnerModel from '../model/partner.model.js'
 import adminModel from '../model/admin.model.js'
 import mongoose from 'mongoose'
 
+import { sendOrderPaidWebhook } from '../services/webhook.service.js';
+
+
 // Funções auxiliares para buscar documentos
 const getPartnerDoc = async (partnerId) => {
     return await partnerModel.findOne({ partnerId }).lean()
@@ -141,53 +144,59 @@ export async function createOrder(req, res) {
         res.status(500).send()
     }
 }
-
 export async function updatePaymentsOrder(req, res) {
     try {
-        const { orderId, paidValue, paymentsNumber, payersIds, payersNames, payerValue, adminPassword, payersPhone } = req.body
+        const [orderId, paidValue, paymentsNumber, payersIds, payersNames, payerValue, adminPassword, payersPhone] = Object.values(req.body);
         
-        const orderDoc = await getOrderDoc(orderId)
+        const orderDoc = await orderModel.findOne({ orderId }).lean();
         if (!orderDoc) {
-            return res.status(404).send({ error: "order doesnt exist" })
+            return res.status(404).send({ error: "pedido não existe" });
         }
         
-        const adminDoc = await getAdminDoc(adminPassword)
+        // Proteção para não reprocessar um pedido já pago
+        if (orderDoc.status === 'paid') {
+            return res.status(200).send({ message: "Pedido já está pago." });
+        }
+
+        const adminDoc = await adminModel.findOne({ adminPassword }).lean();
         if (!adminDoc) {
-            return res.status(403).send()
+            return res.status(403).send();
         }
         
-        // Cálculo do valor total após o pagamento
-        const newTotalPaid = Number(orderDoc.paidValue) + Number(paidValue)
-        const totalValue = Number(orderDoc.totalValue)
+        const newTotalPaid = Number(orderDoc.paidValue) + Number(paidValue);
+        const totalValue = Number(orderDoc.totalValue);
         
-        // Determinar o novo status
-        let newStatus = orderDoc.status
-        if (orderDoc.status === "fresh") {
-            newStatus = newTotalPaid === totalValue ? "paid" : "progress"
-        } else if (orderDoc.status === "progress" && newTotalPaid === totalValue) {
-            newStatus = "paid"
+        let newStatus = orderDoc.status;
+        if (newStatus !== 'paid' && newTotalPaid >= totalValue) {
+            newStatus = "paid";
+        } else if (newStatus === "fresh") {
+            newStatus = "progress";
         }
         
-        // Atualizar o pedido
-        await orderModel.updateOne(
+        // Use findOneAndUpdate para pegar o documento atualizado
+        const updatedOrder = await orderModel.findOneAndUpdate(
             { orderId },
             {
-                $inc: { 
-                    paidValue: paidValue, 
-                    paymentsNumber: paymentsNumber 
-                },
+                $inc: { paidValue: paidValue, paymentsNumber: paymentsNumber },
                 $push: { payersIds: payersIds, payersNames: payersNames, payersValues: payerValue, payersPhone: payersPhone },
-                status: newStatus
-            }
-        )
+                $set: { status: newStatus }
+            },
+            { new: true } // Opção para retornar o documento após a atualização
+        ).lean();
         
-        res.status(200).send()
+        // DISPARAR O WEBHOOK SE O STATUS FOR 'paid'
+        if (updatedOrder.status === 'paid') {
+            // Chamada assíncrona, não precisa esperar a conclusão para responder a requisição
+            sendOrderPaidWebhook(updatedOrder);
+        }
+        
+        res.status(200).send();
         
     } catch (error) {
-        res.status(500).send()
+        console.error(error);
+        res.status(500).send();
     }
 }
-
 export async function getOrdersByPartner(req, res) {
     try {
         const { partnerId } = req.body;
@@ -205,3 +214,5 @@ export async function getOrdersByPartner(req, res) {
         res.status(500).send({ message: 'Erro interno do servidor.' });
     }
 }
+
+

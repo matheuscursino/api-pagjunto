@@ -8,6 +8,11 @@ const partnerSchema = new Schema({
     apiKey: String,
     recipient_id: String,
     email: String,
+    webhookUrl: { 
+        type: String, 
+        default: '' 
+    }, 
+
 })
 
 

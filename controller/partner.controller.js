@@ -121,3 +121,35 @@ export async function getPartnerBalance(req, res) {
         res.status(500).json({ error: 'Erro ao consultar balance do recipient' })
     }
 }
+
+export async function updateWebhookUrl(req, res) {
+    try {
+        const { partnerId, apiKey, webhookUrl } = req.body;
+
+        // Validação básica
+        if (!partnerId || !apiKey) {
+            return res.status(401).json({ message: 'Autenticação necessária.' });
+        }
+
+        // Autenticar parceiro
+        const partner = await partnerModel.findOne({ partnerId: partnerId, apiKey: apiKey });
+        if (!partner) {
+            return res.status(403).json({ message: 'Parceiro ou apiKey inválida.' });
+        }
+
+        // Validação simples da URL (pode ser mais robusta)
+        if (webhookUrl && !webhookUrl.startsWith('http')) {
+            return res.status(400).json({ message: 'URL do webhook inválida.' });
+        }
+        
+        // Atualizar a URL no banco
+        partner.webhookUrl = webhookUrl;
+        await partner.save();
+
+        res.status(200).json({ message: 'URL do webhook atualizada com sucesso.' });
+
+    } catch (error) {
+        console.error('Erro ao atualizar URL do webhook:', error);
+        res.status(500).json({ message: 'Erro interno do servidor.' });
+    }
+}
