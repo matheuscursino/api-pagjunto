@@ -42,7 +42,7 @@ export async function getEmployees(req, res) {
 
         console.log(`Buscando funcionários para o partnerId: ${partnerId}`)
 
-        const employeesDoc = await getEmployeesDocByPartnerRefId(partnerId)
+        const employeesDoc = await getEmployeesDocByPartnerRefId(`${partnerId}`)
 
         console.log(`Funcionários encontrados: ${employeesDoc.length}`);
 
