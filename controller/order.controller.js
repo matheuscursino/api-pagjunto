@@ -57,7 +57,7 @@ const getPartnerDashboardData = async (partnerId) => {
                 // Ramo 2: "recentOrders" para a lista
                 recentOrders: [
                     { $sort: { createdAt: -1 } }, // Ordena pelas mais recentes
-                    { $limit: 100 }              // Limita a 100 documentos
+                    // { $limit: 100 }              // Limita a 100 documentos
                 ]
             }
         },
