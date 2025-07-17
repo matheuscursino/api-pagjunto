@@ -44,7 +44,7 @@ export async function getEmployees(req, res) {
         }
 
         res.status(200).send({
-            employeesDoc
+            employees: employeesDoc
         })
     } catch (error) {
         res.status(500).send()
