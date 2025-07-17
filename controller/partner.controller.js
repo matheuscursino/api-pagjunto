@@ -1,6 +1,5 @@
 import partnerModel from '../model/partner.model.js'
 import adminModel from '../model/admin.model.js'
-import employeeModel from '../model/employee.model.js'
 
 import mongoose from 'mongoose'
 import crypto from 'crypto'
@@ -21,7 +20,7 @@ const getPartnerDocByEmail = async (email) => {
 }
 
 const getEmployeesDocByPartnerRefId = async (partnerRefId) => {
-    return await employeeModel.find({ partnerRefId }).lean()
+    return await partnerModel.find({ partnerRefId }).lean()
 }
 
 // Função auxiliar para hash de senha
@@ -36,7 +35,7 @@ const hashPassword = (password) => {
 
 export async function getEmployees(req, res) {
     try {
-        const { partnerId } = req.body
+        const { partnerId } = req.query
 
         const employeesDoc = await getEmployeesDocByPartnerRefId(partnerId)
 
