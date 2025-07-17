@@ -36,8 +36,15 @@ const hashPassword = (password) => {
 export async function getEmployees(req, res) {
     try {
         const { partnerId } = req.query
+        if (!partnerId) {
+             return res.status(400).send({ error: "partnerId is required" });
+        }
+
+        console.log(`Buscando funcionários para o partnerId: ${partnerId}`)
 
         const employeesDoc = await getEmployeesDocByPartnerRefId(partnerId)
+
+        console.log(`Funcionários encontrados: ${employeesDoc.length}`);
 
         if (!employeesDoc) {
             return res.status(404).send({ error: "there are no employees" })
