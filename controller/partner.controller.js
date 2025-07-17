@@ -1,5 +1,7 @@
 import partnerModel from '../model/partner.model.js'
 import adminModel from '../model/admin.model.js'
+import employeeModel from '../model/employee.model.js'
+
 import mongoose from 'mongoose'
 import crypto from 'crypto'
 import bcrypt from 'bcrypt'
@@ -18,6 +20,10 @@ const getPartnerDocByEmail = async (email) => {
     return await partnerModel.findOne({ email }).lean()
 }
 
+const getEmployeesDocByPartnerRefId = async (partnerRefId) => {
+    return await employeeModel.find({ partnerRefId }).lean()
+}
+
 // Função auxiliar para hash de senha
 const hashPassword = (password) => {
     return new Promise((resolve, reject) => {
@@ -26,6 +32,25 @@ const hashPassword = (password) => {
             else resolve(hash)
         })
     })
+}
+
+export async function getEmployees(req, res) {
+    try {
+        const { partnerId } = req.body
+
+        const employeesDoc = await getEmployeesDocByPartnerRefId(partnerId)
+
+        if (!employeesDoc) {
+            return res.status(404).send({ error: "there are no employees" })
+        }
+
+        res.status(200).send({
+            employeesDoc
+        })
+    } catch (error) {
+        res.status(500).send()
+
+    }
 }
 
 export async function getPartner(req, res) {
