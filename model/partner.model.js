@@ -12,7 +12,8 @@ const partnerSchema = new Schema({
         type: String, 
         default: '' 
     }, 
-
+    role: String,
+    partnerRef: String
 })
 
 

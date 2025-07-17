@@ -69,7 +69,9 @@ export async function createPartner(req, res) {
             password: encryptedPassword,
             name: partnerName,
             apiKey: apiUUID,
-            recipient_id
+            recipient_id,
+            role: "partner",
+            partnerRef: ""
         })
         
         await partner.save()
