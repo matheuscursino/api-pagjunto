@@ -82,6 +82,39 @@ export async function createPartner(req, res) {
     }
 }
 
+
+export async function createEmployee(req, res) {
+    try {
+        const { partnerName, email, partnerPassword, adminPassword, partnerRefId } = req.body
+        
+        const adminDoc = await getAdminDoc(adminPassword)
+        if (!adminDoc) {
+            return res.status(403).send()
+        }
+        
+        const encryptedPassword = await hashPassword(partnerPassword)
+        const apiUUID = crypto.randomUUID()
+        const partnerId = new mongoose.Types.ObjectId()
+        
+        const partner = new partnerModel({
+            partnerId,
+            email,
+            password: encryptedPassword,
+            name: partnerName,
+            apiKey: apiUUID,
+            recipient_id,
+            role: "employee",
+            partnerRef: partnerRefId
+        })
+        
+        await partner.save()
+        res.status(201).send(partnerId)
+        
+    } catch (error) {
+        res.status(500).send()
+    }
+}
+
 export async function getPartnerByEmail(req, res) {
     try {
         const { email } = req.body
