@@ -20,7 +20,7 @@ const getPartnerDocByEmail = async (email) => {
 }
 
 const getEmployeesDocByPartnerRefId = async (partnerRefId) => {
-    return await partnerModel.find({ partnerRefId }).lean()
+    return await partnerModel.find({ partnerRef: partnerRefId }).lean()
 }
 
 // Função auxiliar para hash de senha
