@@ -85,25 +85,26 @@ export async function createPartner(req, res) {
 
 export async function createEmployee(req, res) {
     try {
-        const { partnerName, email, partnerPassword, adminPassword, partnerRefId } = req.body
+        const { newEmployee } = req.body
+        console.log(req.body)
         
-        const adminDoc = await getAdminDoc(adminPassword)
+        const adminDoc = await getAdminDoc(newEmployee.adminPassword)
         if (!adminDoc) {
             return res.status(403).send()
         }
         
-        const encryptedPassword = await hashPassword(partnerPassword)
+        const encryptedPassword = await hashPassword(newEmployee.partnerPassword)
         const partnerId = new mongoose.Types.ObjectId()
         
         const partner = new partnerModel({
             partnerId,
-            email,
+            email: newEmployee.email,
             password: encryptedPassword,
-            name: partnerName,
+            name: newEmployee.partnerName,
             apiKey: "",
-            recipient_id,
+            recipient_id: "",
             role: "employee",
-            partnerRef: partnerRefId
+            partnerRef: newEmployee.partnerRef
         })
         
         await partner.save()
