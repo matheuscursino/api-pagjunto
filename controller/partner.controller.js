@@ -126,14 +126,15 @@ export async function createEmployee(req, res) {
         
         const encryptedPassword = await hashPassword(newEmployee.partnerPassword)
         const partnerId = new mongoose.Types.ObjectId()
-        
+        const apiUUID = crypto.randomUUID()
+
         const partner = new partnerModel({
             partnerId,
             email: newEmployee.email,
             password: encryptedPassword,
             name: newEmployee.partnerName,
-            apiKey: "",
-            recipient_id: "",
+            apiKey: apiUUID,
+            recipient_id: newEmployee.recipient_id,
             role: "employee",
             partnerRef: newEmployee.partnerRef
         })
