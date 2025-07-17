@@ -73,7 +73,8 @@ export async function getPartner(req, res) {
             partnerName: partnerDoc.name,
             recipient_id: partnerDoc.recipient_id,
             partnerId: partnerDoc.partnerId,
-            apiKey: partnerDoc.apiKey
+            apiKey: partnerDoc.apiKey,
+            role: partnerDoc.role
         })
         
     } catch (error) {
