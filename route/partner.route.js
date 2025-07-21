@@ -1,6 +1,6 @@
 import express from 'express'
 var partnerRouter = express.Router()
-import { getPartner, createPartner, getPartnerByEmail, getPartnerBalance, updateWebhookUrl, createEmployee, getEmployees} from '../controller/partner.controller.js'
+import { getPartner, createPartner, getPartnerByEmail, getPartnerBalance, updateWebhookUrl, createEmployee, getEmployees, deleteEmployee} from '../controller/partner.controller.js'
 
 
 partnerRouter.get('/', getPartner)
@@ -10,6 +10,7 @@ partnerRouter.get('/balance', getPartnerBalance)
 partnerRouter.put('/webhook', updateWebhookUrl);
 partnerRouter.post('/employee', createEmployee)
 partnerRouter.get('/employee', getEmployees)
+partnerRouter.delete('/employee', deleteEmployee)
 
 
 

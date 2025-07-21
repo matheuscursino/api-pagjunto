@@ -222,3 +222,12 @@ export async function updateWebhookUrl(req, res) {
         res.status(500).json({ message: 'Erro interno do servidor.' });
     }
 }
+
+export async function deleteEmployee(req, res){
+    const { employeeId } = req.body
+
+    await partnerModel.deleteOne({ partnerId: employeeId });
+
+    return res.status(200).json({ message: 'Funcionário removido com sucesso.' });
+}
+
