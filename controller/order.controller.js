@@ -19,6 +19,10 @@ const getAdminDoc = async (adminPassword) => {
     return await adminModel.findOne({ adminPassword }).lean()
 }
 
+const getParentPartnerDoc = async (partnerId) => {
+    return await partnerModel.findOne({ partnerId: partnerId }).lean()
+}
+
 const getPartnerDashboardData = async (partnerId) => {
     // Pipeline de Agregação do MongoDB
     const aggregationPipeline = [
@@ -110,9 +114,10 @@ export async function getOrder(req, res) {
 
 export async function createOrder(req, res) {
     try {
-        const { name, partnerId, totalValue, apiKey } = req.body
+        const { name, partnerId, totalValue, apiKey, partnerRefId } = req.body
         
         const partnerDoc = await getPartnerDoc(partnerId)
+
         
         if (!partnerDoc) {
             return res.status(404).send({ error: "partner doesnt exist" })
