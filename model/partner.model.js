@@ -13,7 +13,7 @@ const partnerSchema = new Schema({
         default: '' 
     }, 
     role: String,
-    partnerRef: mongoose.ObjectId
+    partnerRef: String
 })
 
 
