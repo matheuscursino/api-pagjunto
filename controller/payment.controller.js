@@ -88,15 +88,69 @@ const updateOrderPayment = async (orderId, paidValue, name) => {
     }
 }
 
+// --- Funções Auxiliares para Geração de Dados ---
+
+/**
+ * Gera um número de CPF aleatório e válido.
+ * @returns {string} Uma string com 11 dígitos do CPF.
+ */
+function generateRandomCpf() {
+    const randomDigits = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10));
+
+    // Calcula o primeiro dígito verificador
+    let sum = randomDigits.reduce((acc, digit, index) => acc + digit * (10 - index), 0);
+    let firstVerifier = (sum * 10) % 11;
+    if (firstVerifier === 10) firstVerifier = 0;
+    
+    randomDigits.push(firstVerifier);
+
+    // Calcula o segundo dígito verificador
+    sum = randomDigits.reduce((acc, digit, index) => acc + digit * (11 - index), 0);
+    let secondVerifier = (sum * 10) % 11;
+    if (secondVerifier === 10) secondVerifier = 0;
+
+    randomDigits.push(secondVerifier);
+
+    return randomDigits.join('');
+}
+
+/**
+ * Gera um número de telefone celular brasileiro aleatório.
+ * @returns {object} Um objeto com country_code, area_code e number.
+ */
+function generateRandomPhone() {
+    // DDDs válidos no Brasil (excluindo alguns não utilizados)
+    const ddds = [
+        11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 24, 27, 28, 31, 32, 33, 34,
+        35, 37, 38, 41, 42, 43, 44, 45, 46, 47, 48, 49, 51, 53, 54, 55, 61, 62,
+        63, 64, 65, 66, 67, 68, 69, 71, 73, 74, 75, 77, 79, 81, 82, 83, 84, 85,
+        86, 87, 88, 89, 91, 92, 93, 94, 95, 96, 97, 98, 99
+    ];
+
+    const area_code = ddds[Math.floor(Math.random() * ddds.length)].toString();
+    const number = '9' + Math.floor(10000000 + Math.random() * 90000000).toString(); // Garante 9 dígitos começando com 9
+
+    return {
+        country_code: '55',
+        area_code,
+        number
+    };
+}
+
+
+// --- Sua Função Principal Modificada ---
+
 export async function createPix(req, res) {
     try {
-        // ATENÇÃO: Esta função não foi alterada para receber o telefone do front-end.
-        // Ela ainda usa o valor hardcoded como no código original que você forneceu.
         const { name, amount, orderId } = req.body;
 
         if (!name || !amount || !orderId) {
             return res.status(400).json({ error: 'Todos os campos, incluindo orderId, são obrigatórios.' });
         }
+        
+        // Gera um CPF e um telefone aleatório para esta transação
+        const randomCpf = generateRandomCpf();
+        const randomPhone = generateRandomPhone();
 
         const orderPayload = {
             reference_id: `order-${Date.now()}`,
@@ -110,32 +164,32 @@ export async function createPix(req, res) {
             ],
             customer: {
                 name: name,
-                email: 'cliente@exemplo.com',
+                email: 'cliente@exemplo.com', // Mantido como exemplo
                 type: 'individual',
                 phones: {
                     mobile_phone: { 
-                        country_code: phone.country_code, 
-                        area_code: phone.area_code, 
-                        number: phone.number
+                        country_code: randomPhone.country_code, 
+                        area_code: randomPhone.area_code, 
+                        number: randomPhone.number
                     }
                 },
-                document: cpf
+                // Usa o CPF gerado aleatoriamente
+                document: randomCpf,
             },
             payments: [
                 {
                     payment_method: 'pix',
                     pix: {
-                        expires_in: PIX_EXPIRY_TIME
+                        expires_in: PIX_EXPIRY_TIME // Certifique-se que essa constante está definida
                     },
-                    split: createSplitPayload(amount, recipient_id)
                 }
             ]
-        }
+        };
 
         const response = await axios.post(
             'https://api.pagar.me/core/v5/orders',
             orderPayload,
-            { headers: createAuthHeaders() }
+            { headers: createAuthHeaders() } // Certifique-se que essa função está definida
         );
 
         const charge = response.data.charges[0];
