@@ -4,14 +4,12 @@ const { Schema } = mongoose
 const orderSchema = new Schema({
     name: String,
     orderId: mongoose.ObjectId,
-    partnerId: String,
+    userKey: String,
     totalValue: Number,
     paidValue: Number,
     paymentsNumber: Number,
-    payersIds: Array,
     payersNames: Array,
     payersValues: Array,
-    payersPhone: Array,
     pagarmeChargeId: { type: Array, required: false, index: true },
     status: String,
 })

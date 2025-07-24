@@ -9,10 +9,6 @@ const getOrderDoc = async (orderId) => {
     return await orderModel.findOne({ orderId }).lean()
 }
 
-const getAdminDoc = async (adminPassword) => {
-    return await adminModel.findOne({ adminPassword }).lean()
-}
-
 export async function getOrder(req, res) {
     try {
         const { orderId }= req.body
@@ -31,11 +27,12 @@ export async function getOrder(req, res) {
 
 export async function createOrder(req, res) {
     try {
-        const { name, totalValue, apiKey } = req.body
+        const { name, totalValue, userKey } = req.body
         
         const orderId = new mongoose.Types.ObjectId()
         const order = new orderModel({
             name,
+            userKey,
             orderId,
             totalValue,
             paidValue: 0,
