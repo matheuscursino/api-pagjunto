@@ -2,8 +2,6 @@ import orderModel from '../model/order.model.js'
 import adminModel from '../model/admin.model.js'
 import mongoose from 'mongoose'
 
-import { sendOrderPaidWebhook } from '../services/webhook.service.js';
-
 
 const getOrderDoc = async (orderId) => {
     return await orderModel.findOne({ orderId }).lean()

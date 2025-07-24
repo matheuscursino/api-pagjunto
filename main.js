@@ -128,7 +128,6 @@ app.get('/', (req, res) =>  {
 })
 
 app.use('/v1/order', orderRouter)
-app.use('/v1/partner', partnerRouter)
 app.use('/v1/payment', paymentRouter)
 
 httpServer.listen(port, () => {
