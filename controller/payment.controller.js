@@ -4,8 +4,6 @@ import { io, emitToRoom, getRoomInfo } from '../main.js';
 
 // Constantes para configuração
 const PIX_EXPIRY_TIME = 3600
-const PLATFORM_FEE_PERCENTAGE = 0.03 // 3%
-const PARTNER_PERCENTAGE = 1 - PLATFORM_FEE_PERCENTAGE // 97%
 
 // Função auxiliar para criar headers de autenticação
 const createAuthHeaders = () => ({
@@ -15,9 +13,6 @@ const createAuthHeaders = () => ({
 
 // Função auxiliar para criar payload de split
 const createSplitPayload = (totalAmountInCents, recipientId) => {
-    const partnerAmount = Math.floor(totalAmountInCents * PARTNER_PERCENTAGE);
-    const platformAmount = totalAmountInCents - partnerAmount;
-
     return [
         {
             amount: partnerAmount,
@@ -38,24 +33,22 @@ const createSplitPayload = (totalAmountInCents, recipientId) => {
 }
 
 // Função auxiliar para atualizar pagamento
-const updateOrderPayment = async (orderId, paidValue, payerId, name, payerPhone) => {
+const updateOrderPayment = async (orderId, paidValue, name) => {
     try {
         const valueInReais = parseFloat(paidValue);
         const orderIdString = orderId.toString();
 
         console.log(`🔄 Iniciando atualização de pagamento para ordem: ${orderIdString}`);
-        console.log(`💰 Valor: R$ ${valueInReais}, Pagador: ${name}, Telefone: ${payerPhone}`);
+        console.log(`💰 Valor: R$ ${valueInReais}, Pagador: ${name}`);
 
         // Atualizar o pagamento no banco
         await axios.put(`${process.env.SITE_URL}/v1/order/payments`, {
             orderId: orderIdString,
             paidValue: valueInReais,
             paymentsNumber: 1,
-            payersIds: payerId,
             payersNames: name,
             payerValue: valueInReais,
-            adminPassword: process.env.ADMIN_PASSWORD,
-            payersPhone: payerPhone
+            adminPassword: process.env.ADMIN_PASSWORD
         });
 
         console.log(`✅ Pagamento atualizado no banco para ordem: ${orderIdString}`);
@@ -99,9 +92,9 @@ export async function createPix(req, res) {
     try {
         // ATENÇÃO: Esta função não foi alterada para receber o telefone do front-end.
         // Ela ainda usa o valor hardcoded como no código original que você forneceu.
-        const { name, cpf, amount, recipient_id, orderId, phone } = req.body;
+        const { name, amount, orderId } = req.body;
 
-        if (!name || !cpf || !amount || !orderId) {
+        if (!name || !amount || !orderId) {
             return res.status(400).json({ error: 'Todos os campos, incluindo orderId, são obrigatórios.' });
         }
 

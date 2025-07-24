@@ -1,5 +1,4 @@
 import orderRouter from './route/order.route.js'
-import partnerRouter from './route/partner.route.js'
 import paymentRouter from './route/payment.route.js'
 
 import express from 'express'
