@@ -56,7 +56,6 @@ export async function updatePaymentsOrder(req, res) {
             return res.status(404).send({ error: "pedido não existe" });
         }
         
-        // Proteção para não reprocessar um pedido já pago
         if (orderDoc.status === 'paid') {
             return res.status(200).send({ message: "Pedido já está pago." });
         }
@@ -76,7 +75,6 @@ export async function updatePaymentsOrder(req, res) {
             newStatus = "progress";
         }
         
-        // Use findOneAndUpdate para pegar o documento atualizado
         const updatedOrder = await orderModel.findOneAndUpdate(
             { orderId },
             {
@@ -84,12 +82,10 @@ export async function updatePaymentsOrder(req, res) {
                 $push: { payersNames: payersNames, payersValues: payerValue },
                 $set: { status: newStatus }
             },
-            { new: true } // Opção para retornar o documento após a atualização
+            { new: true }
         ).lean();
         
-        // DISPARAR O WEBHOOK SE O STATUS FOR 'paid'
         if (updatedOrder.status === 'paid') {
-            // Chamada assíncrona, não precisa esperar a conclusão para responder a requisição
             sendOrderPaidWebhook(updatedOrder);
         }
         

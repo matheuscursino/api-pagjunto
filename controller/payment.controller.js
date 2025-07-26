@@ -2,37 +2,14 @@ import axios from 'axios'
 import orderModel from '../model/order.model.js'
 import { io, emitToRoom, getRoomInfo } from '../main.js';
 
-// Constantes para configuração
 const PIX_EXPIRY_TIME = 3600
 
-// Função auxiliar para criar headers de autenticação
 const createAuthHeaders = () => ({
     'Content-Type': 'application/json',
     'Authorization': 'Basic ' + Buffer.from(process.env.PAGARME_KEY + ':').toString('base64')
 })
 
-// Função auxiliar para criar payload de split
-const createSplitPayload = (totalAmountInCents, recipientId) => {
-    return [
-        {
-            amount: partnerAmount,
-            recipient_id: recipientId,
-            type: "flat"
-        },
-        {
-            amount: platformAmount,
-            recipient_id: process.env.RECEBEDOR_PLATAFORMA_ID,
-            type: "flat",
-            options: {
-                charge_remainder_fee: true,
-                charge_processing_fee: true,
-                liable: true
-            }
-        }
-    ];
-}
 
-// Função auxiliar para atualizar pagamento
 const updateOrderPayment = async (orderId, paidValue, name) => {
     try {
         const valueInReais = parseFloat(paidValue);
@@ -41,7 +18,6 @@ const updateOrderPayment = async (orderId, paidValue, name) => {
         console.log(`🔄 Iniciando atualização de pagamento para ordem: ${orderIdString}`);
         console.log(`💰 Valor: R$ ${valueInReais}, Pagador: ${name}`);
 
-        // Atualizar o pagamento no banco
         await axios.put(`${process.env.SITE_URL}/v1/order/payments`, {
             orderId: orderIdString,
             paidValue: valueInReais,
@@ -88,7 +64,6 @@ const updateOrderPayment = async (orderId, paidValue, name) => {
     }
 }
 
-// --- Funções Auxiliares para Geração de Dados ---
 
 /**
  * Gera um número de CPF aleatório e válido.
@@ -97,14 +72,12 @@ const updateOrderPayment = async (orderId, paidValue, name) => {
 function generateRandomCpf() {
     const randomDigits = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10));
 
-    // Calcula o primeiro dígito verificador
     let sum = randomDigits.reduce((acc, digit, index) => acc + digit * (10 - index), 0);
     let firstVerifier = (sum * 10) % 11;
     if (firstVerifier === 10) firstVerifier = 0;
     
     randomDigits.push(firstVerifier);
 
-    // Calcula o segundo dígito verificador
     sum = randomDigits.reduce((acc, digit, index) => acc + digit * (11 - index), 0);
     let secondVerifier = (sum * 10) % 11;
     if (secondVerifier === 10) secondVerifier = 0;
@@ -114,12 +87,7 @@ function generateRandomCpf() {
     return randomDigits.join('');
 }
 
-/**
- * Gera um número de telefone celular brasileiro aleatório.
- * @returns {object} Um objeto com country_code, area_code e number.
- */
 function generateRandomPhone() {
-    // DDDs válidos no Brasil (excluindo alguns não utilizados)
     const ddds = [
         11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 24, 27, 28, 31, 32, 33, 34,
         35, 37, 38, 41, 42, 43, 44, 45, 46, 47, 48, 49, 51, 53, 54, 55, 61, 62,
@@ -128,8 +96,7 @@ function generateRandomPhone() {
     ];
 
     const area_code = ddds[Math.floor(Math.random() * ddds.length)].toString();
-    const number = '9' + Math.floor(10000000 + Math.random() * 90000000).toString(); // Garante 9 dígitos começando com 9
-
+    const number = '9' + Math.floor(10000000 + Math.random() * 90000000).toString(); 
     return {
         country_code: '55',
         area_code,
@@ -137,8 +104,6 @@ function generateRandomPhone() {
     };
 }
 
-
-// --- Sua Função Principal Modificada ---
 
 export async function createPix(req, res) {
     try {
@@ -148,7 +113,6 @@ export async function createPix(req, res) {
             return res.status(400).json({ error: 'Todos os campos, incluindo orderId, são obrigatórios.' });
         }
         
-        // Gera um CPF e um telefone aleatório para esta transação
         const randomCpf = generateRandomCpf();
         const randomPhone = generateRandomPhone();
 
@@ -164,7 +128,7 @@ export async function createPix(req, res) {
             ],
             customer: {
                 name: name,
-                email: 'cliente@exemplo.com', // Mantido como exemplo
+                email: 'cliente@exemplo.com', 
                 type: 'individual',
                 phones: {
                     mobile_phone: { 
@@ -173,23 +137,23 @@ export async function createPix(req, res) {
                         number: randomPhone.number
                     }
                 },
-                // Usa o CPF gerado aleatoriamente
+                
                 document: randomCpf,
             },
             payments: [
                 {
                     payment_method: 'pix',
                     pix: {
-                        expires_in: PIX_EXPIRY_TIME // Certifique-se que essa constante está definida
+                        expires_in: PIX_EXPIRY_TIME 
                     },
                 }
             ]
         };
 
         const response = await axios.post(
-            'https://api.pagar.me/core/v5/orders',
+            'https://api-sandbox.asaas.com/v3/pix/qrCodes/static',
             orderPayload,
-            { headers: createAuthHeaders() } // Certifique-se que essa função está definida
+            { headers: createAuthHeaders() } 
         );
 
         const charge = response.data.charges[0];
