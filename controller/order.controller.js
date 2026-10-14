@@ -113,7 +113,6 @@ export async function getOrder(req, res) {
 }
 
 export async function createOrder(req, res) {
-    console.log(req.body)
     try {
         const { name, partnerId, totalValue, apiKey, partnerRefId, userKey } = req.body
         
@@ -121,11 +120,17 @@ export async function createOrder(req, res) {
 
         
         if (!partnerDoc) {
-            return res.status(404).send({ error: "partner doesnt exist" })
+            return res.status(404).json({
+                error: "partner doesnt exist",
+                message: "The specified partner does not exist."
+            })
         }
         
         if (apiKey !== partnerDoc.apiKey) {
-            return res.status(403).send()
+            return res.status(403).json({
+                error: "invalid api key",
+                message: "The API key is invalid."
+            })
         }
         
         const orderId = new mongoose.Types.ObjectId()
@@ -145,10 +150,14 @@ export async function createOrder(req, res) {
         })
         
         await order.save()
-        res.status(201).send(orderId)
+        res.status(201).json(orderId.toString())
         
     } catch (error) {
-        res.status(500).send()
+        console.error('Error creating order:', error)
+        res.status(500).json({
+            error: "order creation failed",
+            message: "The order could not be created. Please try again."
+        })
     }
 }
 export async function updatePaymentsOrder(req, res) {
