@@ -96,10 +96,3 @@ O Socket.IO compartilha atualizações de pagamento. O cliente deve emitir `join
 
 Quando o pedido atinge o valor total, a API envia um `POST` à URL de webhook configurada para o parceiro. O payload inclui `event: "order.paid"`, dados do pedido e pagadores. A assinatura HMAC-SHA256 do payload é enviada no cabeçalho `X-Pagjunto-Signature-256`, usando a chave de API do parceiro.
 
-## Testes
-
-O `package.json` ainda não define uma suíte de testes automatizados; o script `npm test` retorna uma mensagem de teste não configurado.
-
-## Segurança
-
-Não versione o arquivo `.env`, chaves da Pagar.me, senhas administrativas ou chaves de API. Em produção, restrinja o acesso às rotas administrativas e use HTTPS.
